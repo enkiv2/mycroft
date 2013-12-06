@@ -1,0 +1,19 @@
+Syntactic sugar:
+<X| -> <X,1.0>
+|X> -> <1.0,X>
+det name. -> det name :- <1.0, 1.0>.
+
+(det|nondet) name :- <float,float>name((,|;)<float,float>name)*.
+
+det referencing nondet is a compile error. nondet referencing det is fine. Some primitives are allowed to be nondet.
+
+<float,float> when elided is syntactic sugar for <1.0,1.0>. First float is truth value, second float is confidence.
+
+All paths separated by commas are considered related, and the result from that path is multiplied. Paths separated by semicolons are independent (and for the sake of argument mutually exclusive); they are combined by adding subexpressions and capping at 1.0.
+
+Precedence:
+:- .
+<| |> <,>
+,
+;
+
