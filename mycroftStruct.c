@@ -211,3 +211,96 @@ char* arg2String(Argument* x) {
 	}
 	return "FIXME_UNKNOWN_TYPE";
 }
+
+
+#ifdef experimental_bison
+PredicateLookupTree interpreterWorld;
+int anonymousPredCount=0;
+Argument* buildTruth(float t, float c) {
+	CompositeTruthVal* x=malloc(sizeof(CompositeTruthVal));
+	x->truth=t; x->confidence=c;
+	return createTruth(x);
+}
+PredID* buildPredInfo(PredID* p, int isDet) {
+	Predicate* p_out=malloc(sizeof(Predicate));
+	Fact* f_out=malloc(sizeof(Fact));
+	factExists(&interpreterWorld, p, "", p_out, f_out);
+	p_out->def->isDet=isDet;
+}
+PredID* buildPredIDNoArgs(PredID* p, CompositeTruthVal* t) {
+	insertFact(&interpreterWorld, p, "", t);
+}
+PredID* insertTruthy(PredID* p, CompositeTruthVal* t) {
+	return buildAND(p, buildAnonymousFact(t));
+}
+PredID* buildAnonymousFact(CompositeTruthVal* t) {
+	PredID* p=malloc(sizeof(PredID));
+	p->name=malloc(1024);
+	sprintf(p->name, "__ANONPRED%d", anonymousPredCount++);
+	insertFact(&interpreterWorld, p, "", t);
+}
+PredID* buildFact(PredID* p) {
+	insertFact(&interpreterWorld, p, "", buildTruth(1.0, 1.0));
+}
+PredID* definePred(PredID* p, PredID* q) {
+	return buildAND(p, q);
+}
+PredID* buildY(PredID* p, PredID* q, int andOr) {
+	Predicate* p_out=malloc(sizeof(Predicate));
+	Fact* f_out=malloc(sizeof(Fact));
+	PredicateLookupTree w=malloc(sizeof(PredicateLookupTree));
+	FactTree f=malloc(sizeof(FactTree));
+	PredID* new=malloc(sizeof(PredID));
+	new->name=malloc(1024);
+	sprintf(new->name, "__ANONPRED%d", anonymousPredCount++);
+	new->arity=0;
+	Predicate* newPred=malloc(sizeof(Predicate));
+	newPred->pred=new;
+	newPred->def=malloc(sizeof(PredicateDefinitionTree));
+	newPred->def->children=malloc(sizeof(PredID)*2);
+	newPred->def->children[0]=p;
+	newPred->def->children[1]=q;
+	newPred->def->andOr=andOr;
+	newPred->def->correspondences=malloc(sizeof(ArityConversion)*2);
+	newPred->def->correspondences[0]->length=0;
+	newPred->def->correspondences[1]->length=0;
+	factExists(&interpreterWorld, new, "", p_out, f_out, w, f);
+	if(NULL==w->item) {
+		w->item=newPred;
+	} else {
+		x=strcmp(w->item->name, new->name);
+		if(NULL==w->children) {
+			w->children=malloc(sizeof(PredicateLookupTree)*2);
+			w->children[0]=NULL;
+			w->children[1]=NULL;
+		}
+		if(x>=0) {
+			w->children[0]=newPred;
+		} else {
+			w->children[1]=newPred;
+		}
+	}
+	return new;
+}
+PredID* buildAND(PredID* p, PredID* q) {
+	return buildY(p, q, 1);
+}
+PredID* buildOR(PredID* p, PredID* q) {
+	return buildY(p, q, 0);
+}
+ArgList* buildList(Argument* a) {
+	ArgList* ret=malloc(sizeof(ArgList));
+	ret->next=NULL;
+	ret->item=a;
+	return ret;
+}
+ArgList* appendList(ArgList* list, Argument* a) {
+	ArgList* l=list;
+	while(NULL!=l->next) { l=l->next; }
+	l->next=malloc(sizeof(ArgList));
+	l=l->next;
+	l->next=NULL;
+	l->item=a;
+	return list;
+}
+#endif

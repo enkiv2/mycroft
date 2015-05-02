@@ -141,5 +141,20 @@ PredID* getPred(Argument* x);
 MycForeignFunction getForeignFunction(Argument* x);
 
 char* arg2String(Argument* x);
+
+#ifdef experimental_bison
+Argument* buildTruth(float t, float c);
+PredID* buildPredInfo(PredID* p, int isDet);
+PredID* buildPredIDNoArgs(PredID* p, CompositeTruthVal* t);
+PredID* insertTruthy(PredID* p, CompositeTruthVal* t);
+PredID* buildAnonymousFact(CompositeTruthVal* t);
+PredID* buildFact(PredID* p);
+PredID* definePred(PredID* p, PredID* q);
+PredID* buildAND(PredID* p, PredID* q);
+PredID* buildOR(PredID* p, PredID* q);
+ArgList* buildList(Argument* a);
+ArgList* appendList(ArgList* list, Argument* a);
+#endif
+
 #endif
 
