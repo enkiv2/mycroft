@@ -1,4 +1,8 @@
 #include "mycroft.h"
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdarg.h>
 
 /* Return 0 if a fact does not exist; set f_out to it and return 1 if it does. 
  * If the predicate exists, set p_out to that pred.

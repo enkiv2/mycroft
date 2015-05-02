@@ -1,6 +1,5 @@
 #include "mycroft.h"
 #include <string.h>
-#include <crypt.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
