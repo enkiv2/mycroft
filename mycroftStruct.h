@@ -1,5 +1,12 @@
 #ifndef MYCROFT_STRUCT_H
 #define MYCROFT_STRUCT_H
+
+extern int MYCERR;
+extern char* MYCERR_STR;
+#define MYC_ERR_NOERR 0
+#define MYC_ERR_DETNONDET 1
+#define MYC_ERR_UNDEFWORLD 2
+
 /* We use prolog-style identifiers: pred/arity
  *  ex: 
  *   foo(Bar, Baz) 		->	foo/2
@@ -104,36 +111,33 @@ typedef struct {
  * Functions                                                                          *
  **************************************************************************************/
 
+int cmpPredID(PredID* x, PredID* y);
+int cmpTruth(CompositeTruthVal* x, CompositeTruthVal* y);
+
 /* Return 0 if a fact does not exist; set f_out to it and return 1 if it does. 
  * If the predicate exists, set p_out to that pred.
  * Developers are strongly encouraged to set p_out and f_out to NULL before running the function
+ * Even if the pred is not found, w will be set to the pred tree that would be its parent; likewise for f and facts
  */
+int factExists_r(PredicateLookupTree* world, PredID* p, char* hash, Predicate* p_out, Fact* f_out, PredicateLookupTree* w, FactTree* f);
 int factExists(PredicateLookupTree* world, PredID* p, char* hash, Predicate* p_out, Fact* f_out);
+void insertFact(PredicateLookupTree* world, PredID* p, char* hash, CompositeTruthVal* truthy);
+
 /* Take an arglist and produce a hash */
-char* hashList(ArgList* l);
+char* hashList(ArgList* list);
 /* Dumb function to get the length of a list */
-int listSize(ArgList* l); /* i=0; while(l!=NULL) { l=l->next; i++;} return i; */
-CompositeTruthValue* performPLBoolean(CompositeTruthValue* p, CompositeTruthValue* q, int operation); /*
-	CompositeTruthValue* result=malloc(sizeof(CompositeTruthValue));
-	if (operation) { // AND
-		result->truth=p->truth*q->truth;
-		result->confidence=p->confidence*q->confidence;
-	} else { // OR
-		result->truth=(p->truth*p->confidence)+(q->truth*q->confidence)-(p->truth*q->truth);
-		if (p->confidence>q->confidence)
-			result->confidence=q->confidence;
-		else
-			result->confidence=p->confidence;
-	}
-	return result;*/
+int listSize(ArgList* list); 
+CompositeTruthVal* performPLBoolean(CompositeTruthVal* p, CompositeTruthVal* q, int operation); 
 /* Just allocate a new PredID structure and fill it in */
 PredID* createPredID(char* pname, int arity);
 /* Mostly for interaction between foreign/C types and native types */
+Argument* createArg(int type, int length, void* ptr);
 Argument* createDC();
 Argument* createInt(int x);
 Argument* createString(char* x);
+Argument* createStringSafe(char* x, int length);
 Argument* createFloat(float x);
-Argument* createTruth(CompositeTruthValue* x);
+Argument* createTruth(CompositeTruthVal* x);
 Argument* createPred(PredID* x);
 Argument* createForeignFunction(MycForeignFunction);
 Argument* createList(ArgList* x);
@@ -149,23 +153,17 @@ int getDC(Argument* x);
 int getInt(Argument* x);
 char* getString(Argument* x);
 float getFloat(Argument* x);
-CompositeTruthValue* getTruth(Argument* x);
+CompositeTruthVal* getTruth(Argument* x);
 PredID* getPred(Argument* x);
 MycForeignFunction getForeignFunction(Argument* x);
 ArgList* getList(Argument* x);
+Argument* getListItem(ArgList* list, int i);
+void setListItem(ArgList* list, int i, Argument* a);
+ArgList* translateArgList(ArgList* list, ArityConversion* arity);
 /* The core of our system: recursive functions */
-CompositeTruthValue* executePredicatePA(PredicateLookupTree* world, PredID* p, ArgList* a); /* 
-	char* hash=hashList(a);
-	Predicate* p_out=NULL;
-	Fact* f_out=NULL;
-	if (factExists(world, p, hash, p_out, f_out)) {
-		return f_out->truthy;
-	} else {
-		// translate our args and traverse the predicate definition tree recursively
-	}
-	*/
-CompositeTruthValue* executePredicateNIA(PredicateLookupTree* world, char* pname, int arity, ArgList* a); /* 
-	return executePredicatePA(world, createPredID(pname, arity), a); */
-CompositeTruthValue* executePredicateNA(PredicateLookupTree* world, char* pname, ArgList* a); /* return executePredicateNIA(world, pname, listSize(a), a); */
+CompositeTruthVal* executePredicatePA(PredicateLookupTree* world, PredID* p, ArgList* a); 
+CompositeTruthVal* executePredicateNIA(PredicateLookupTree* world, char* pname, int arity, ArgList* a); 
+CompositeTruthVal* executePredicateNA(PredicateLookupTree* world, char* pname, ArgList* a); 
+char* error_string(int code);
 #endif
 
