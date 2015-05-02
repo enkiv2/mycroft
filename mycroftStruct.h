@@ -1,12 +1,6 @@
 #ifndef MYCROFT_STRUCT_H
 #define MYCROFT_STRUCT_H
 
-extern int MYCERR;
-extern char* MYCERR_STR;
-#define MYC_ERR_NOERR 0
-#define MYC_ERR_DETNONDET 1
-#define MYC_ERR_UNDEFWORLD 2
-
 /* We use prolog-style identifiers: pred/arity
  *  ex: 
  *   foo(Bar, Baz) 		->	foo/2
@@ -165,6 +159,5 @@ ArgList* translateArgList(ArgList* list, ArityConversion* arity);
 CompositeTruthVal* executePredicatePA(PredicateLookupTree* world, PredID* p, ArgList* a); 
 CompositeTruthVal* executePredicateNIA(PredicateLookupTree* world, char* pname, int arity, ArgList* a); 
 CompositeTruthVal* executePredicateNA(PredicateLookupTree* world, char* pname, ArgList* a); 
-char* error_string(int code);
 #endif
 
