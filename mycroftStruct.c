@@ -355,6 +355,10 @@ CompositeTruthVal* executePredicatePA(PredicateLookupTree* world, PredID* p, Arg
 			sprintf(tmp, "%s at %s/%d\n", MYCERR_STR, p->name, p->arity);
 			free(MYCERR_STR);
 			MYCERR_STR=tmp;
+		} else {
+			if(p_out->defs->isDet) {
+				insertFact(world, p, hash, ret);
+			}
 		}
 		return ret;
 	}

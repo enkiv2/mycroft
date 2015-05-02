@@ -76,6 +76,7 @@ typedef struct {
 	unsigned int andOr; 			/* Boolean: 0 -> OR, otherwise AND */
 	PredID* parent;
 	PredID* children;			/* Exactly two children */
+	unsigned int isDet; 			/* Is this function noted as determinate? i.e., do we memoize it? */
 } PredDefinitionTree;
 
 
