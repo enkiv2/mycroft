@@ -38,8 +38,9 @@ CompositeTruthVal* executePredicatePA(PredicateLookupTree* world, PredID* p, Arg
 		if(MYC_ERR_NOERR!=MYCERR) {
 			ret->truth=0; ret->confidence=0;
 			if(NULL==MYCERR_STR) MYCERR_STR=error_string(MYCERR);
-			char* tmp=malloc(1024+strlen(p->name)+strlen(MYCERR_STR));
-			sprintf(tmp, "%s at %s/%d\n", MYCERR_STR, p->name, p->arity);
+			char* argListStr=arg2String(createList(a));
+			char* tmp=malloc(1024+strlen(p->name)+strlen(MYCERR_STR)+strlen(argListStr));
+			sprintf(tmp, "%s at %s/%d %s%s\n", MYCERR_STR, p->name, p->arity, p->name, argListStr);
 			free(MYCERR_STR);
 			MYCERR_STR=tmp;
 		} else {
