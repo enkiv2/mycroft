@@ -109,19 +109,7 @@ typedef struct {
 int cmpPredID(PredID* x, PredID* y);
 int cmpTruth(CompositeTruthVal* x, CompositeTruthVal* y);
 
-/* Return 0 if a fact does not exist; set f_out to it and return 1 if it does. 
- * If the predicate exists, set p_out to that pred.
- * Developers are strongly encouraged to set p_out and f_out to NULL before running the function
- * Even if the pred is not found, w will be set to the pred tree that would be its parent; likewise for f and facts
- */
-int factExists_r(PredicateLookupTree* world, PredID* p, char* hash, Predicate* p_out, Fact* f_out, PredicateLookupTree* w, FactTree* f);
-int factExists(PredicateLookupTree* world, PredID* p, char* hash, Predicate* p_out, Fact* f_out);
-void insertFact(PredicateLookupTree* world, PredID* p, char* hash, CompositeTruthVal* truthy);
 
-/* Take an arglist and produce a hash */
-char* hashList(ArgList* list);
-/* Dumb function to get the length of a list */
-int listSize(ArgList* list); 
 CompositeTruthVal* performPLBoolean(CompositeTruthVal* p, CompositeTruthVal* q, int operation); 
 /* Just allocate a new PredID structure and fill it in */
 PredID* createPredID(char* pname, int arity);
@@ -151,8 +139,5 @@ float getFloat(Argument* x);
 CompositeTruthVal* getTruth(Argument* x);
 PredID* getPred(Argument* x);
 MycForeignFunction getForeignFunction(Argument* x);
-ArgList* getList(Argument* x);
-Argument* getListItem(ArgList* list, int i);
-void setListItem(ArgList* list, int i, Argument* a);
 #endif
 
