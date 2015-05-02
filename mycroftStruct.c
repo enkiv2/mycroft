@@ -127,3 +127,87 @@ MycForeignFunction getForeignFunction(Argument* x) {
 ArgList* getList(Argument* x) {
 	return (ArgList*)(x->ptr);
 }
+
+char* arg2String(Argument* x) {
+	char* ret;
+	if(isDC(x)) return "_";
+	if(isInt(x)) {
+		ret=malloc(1024);
+		snprintf(ret, 1024, "%d", *(x->ptr));
+		return ret;
+	}
+	if(isString(x)) {
+		ret=malloc(strlen(x->ptr)+3);
+		sprintf(ret, "\"%s\"", x->ptr);
+		return ret;
+	}
+	if(isFloat(x)) {
+		ret=malloc(1024);
+		snprintf(ret, 1024, "%f", *(x->ptr));
+		return ret;
+	}
+	if(isTruth(x)) {
+		ret=malloc(1024);
+		CompositeTruthVal* t=(CompositeTruthVal*)(x->ptr);
+		if(1.0==t->confidence) {
+			if(1.0==t->truth) {
+				snprintf(ret, 1024, "YES");
+			} else {
+				if(0.0==t->truth) {
+					snprintf(ret, 1024, "NO");
+				} else {
+					snprintf(ret, 1024, "<%f|", t->truth);
+				}
+			}
+		} else {
+			if(1.0==t->truth) {
+				snprintf(ret, 1024, "|%f>", t->confidence);
+			} else { 
+				if (0.0==t->confidence) {
+					snprintf(ret, 1024, "DK");
+				} else {
+					snprintf(ret, 1024, "<%f,%f>", t->truth, t->confidence);
+				}
+			}
+		}
+		return ret;
+	}
+	if(isPred(x)) {
+		PredID* p=(PredID*)(x->ptr);
+		int len=strlen(p->name);
+		ret=malloc(1024+len);
+		snprintf(ret, 1024+len, "%s/%d", p->name, p->arity);
+		return ret;
+	}
+	if(isForeignFunction(x)) {
+		ret=malloc(1024);
+		snprintf(ret, 1024, "@%x", x->ptr);
+		return ret;
+	}
+	if(isList(x)) {
+		ArgList* l=(ArgList*)(x->ptr);
+		char* tmp;
+		char* tmp2;
+		int sl;
+		ret=malloc(2);
+		tmp2=malloc(2);
+		sprintf(ret, "(");
+		do {
+			tmp=arg2String(l->item);
+			sl=strlen(ret);
+			if(sl==1) {
+				realloc(ret, strlen(tmp)+3);
+				sprintf(ret, "(%s", tmp);
+			} else {
+				sl+=strlen(tmp);
+				realloc(ret, sl+3);
+				realloc(tmp2, sl);
+				strncpy(tmp2, ret, sl);
+				snprintf(ret, sl+2, "%s,%s", ret, tmp);
+			}
+			l=l->next;
+		} while(NULL!=l)
+		return ret;
+	}
+	return "FIXME_UNKNOWN_TYPE";
+}

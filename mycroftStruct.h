@@ -139,5 +139,7 @@ float getFloat(Argument* x);
 CompositeTruthVal* getTruth(Argument* x);
 PredID* getPred(Argument* x);
 MycForeignFunction getForeignFunction(Argument* x);
+
+char* arg2String(Argument* x);
 #endif
 

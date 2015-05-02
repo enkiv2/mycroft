@@ -1,6 +1,9 @@
 Syntactic sugar:
 <X| -> <X,1.0>
 |X> -> <1.0,X>
+YES -> <1.0,1.0>
+NO  -> <0.0,1.0>
+DK  -> <X,0.0>
 det name. -> det name :- <1.0, 1.0>.
 
 (det|nondet) name :- <float,float>name((,|;)<float,float>name)*.
