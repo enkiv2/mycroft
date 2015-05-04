@@ -9,7 +9,7 @@
  **************************************************************************************/
 
 int cmpPredID(PredID* x, PredID* y) {
-	if(x.arity==y.arity) {
+	if(x->arity==y->arity) {
 		if(0==strcmp(x->name, y->name)) {
 			return 1;
 		}
@@ -20,7 +20,7 @@ int cmpTruth(CompositeTruthVal* x, CompositeTruthVal* y) {
 	return (0==(x->truth)-(y->truth) && 0==(x->confidence)-(y->confidence));
 }
 CompositeTruthVal* performPLBoolean(CompositeTruthVal* p, CompositeTruthVal* q, int operation) {
-	CompositeTruthVal* result=malloc(sizeof(CompositeTruthValue));
+	CompositeTruthVal* result=malloc(sizeof(CompositeTruthVal));
 	if (operation) { // AND
 		result->truth=p->truth*q->truth;
 		result->confidence=p->confidence*q->confidence;
@@ -37,7 +37,7 @@ CompositeTruthVal* performPLBoolean(CompositeTruthVal* p, CompositeTruthVal* q, 
 /* Just allocate a new PredID structure and fill it in */
 PredID* createPredID(char* pname, int arity) {
 	PredID* ret = malloc(sizeof(PredID));
-	ret->pname=pname;
+	ret->name=pname;
 	ret->arity=arity;
 	return ret;
 }
@@ -65,7 +65,7 @@ Argument* createStringSafe(char* x, int length) {
 Argument* createFloat(float x) {
 	float* ptr=malloc(sizeof(float));
 	(*ptr)=x;
-	return createArg(MYC_TYPE_FLOAT, sizeof(float), x);
+	return createArg(MYC_TYPE_FLOAT, sizeof(float), ptr);
 }
 Argument* createTruth(CompositeTruthVal* x) {
 	return createArg(MYC_TYPE_TRUTH, sizeof(CompositeTruthVal), x);
@@ -80,28 +80,28 @@ Argument* createList(ArgList* x) {
 	return createArg(MYC_TYPE_LIST, sizeof(ArgList), x);
 }
 int isDC(Argument* x) {
-	return ((MYC_TYPE_DC == x.type)?1:0);
+	return ((MYC_TYPE_DC == x->type)?1:0);
 }
 int isInt(Argument* x) {
-	return ((MYC_TYPE_INT == x.type)?1:0);
+	return ((MYC_TYPE_INT == x->type)?1:0);
 }
 int isString(Argument* x) {
-	return ((MYC_TYPE_STR == x.type)?1:0);
+	return ((MYC_TYPE_STR == x->type)?1:0);
 }
 int isFloat(Argument* x) {
-	return ((MYC_TYPE_FLOAT == x.type)?1:0);
+	return ((MYC_TYPE_FLOAT == x->type)?1:0);
 }
 int isTruth(Argument* x) {
-	return ((MYC_TYPE_TRUTH == x.type)?1:0);
+	return ((MYC_TYPE_TRUTH == x->type)?1:0);
 }
 int isPred(Argument* x) {
-	return ((MYC_TYPE_PRED == x.type)?1:0);
+	return ((MYC_TYPE_PRED == x->type)?1:0);
 }
 int isForeignFunction(Argument* x) {
-	return ((MYC_TYPE_FN == x.type)?1:0);
+	return ((MYC_TYPE_FN == x->type)?1:0);
 }
 int isList(Argument* x) {
-	return ((MYC_TYPE_LIST == x.type)?1:0);
+	return ((MYC_TYPE_LIST == x->type)?1:0);
 }
 int getDC(Argument* x) {
 	return 0;
@@ -133,7 +133,7 @@ char* arg2String(Argument* x) {
 	if(isDC(x)) return "_";
 	if(isInt(x)) {
 		ret=malloc(1024);
-		snprintf(ret, 1024, "%d", *(x->ptr));
+		snprintf(ret, 1024, "%d", *((int*)(x->ptr)));
 		return ret;
 	}
 	if(isString(x)) {
@@ -143,7 +143,7 @@ char* arg2String(Argument* x) {
 	}
 	if(isFloat(x)) {
 		ret=malloc(1024);
-		snprintf(ret, 1024, "%f", *(x->ptr));
+		snprintf(ret, 1024, "%f", *((float*)(x->ptr)));
 		return ret;
 	}
 	if(isTruth(x)) {
@@ -196,17 +196,17 @@ char* arg2String(Argument* x) {
 			tmp=arg2String(l->item);
 			sl=strlen(ret);
 			if(sl==1) {
-				realloc(ret, strlen(tmp)+3);
+				ret=realloc(ret, strlen(tmp)+3);
 				sprintf(ret, "(%s", tmp);
 			} else {
 				sl+=strlen(tmp);
-				realloc(ret, sl+3);
-				realloc(tmp2, sl);
+				ret=realloc(ret, sl+3);
+				tmp2=realloc(tmp2, sl);
 				strncpy(tmp2, ret, sl);
 				snprintf(ret, sl+2, "%s,%s", ret, tmp);
 			}
 			l=l->next;
-		} while(NULL!=l)
+		} while(NULL!=l);
 		return ret;
 	}
 	return "FIXME_UNKNOWN_TYPE";
@@ -265,11 +265,11 @@ PredID* buildY(PredID* p, PredID* q, int andOr) {
 	newPred->def->correspondences[0]->length=0;
 	newPred->def->correspondences[1]->length=0;
 	factExists(&interpreterWorld, new, "", p_out, f_out, w, f);
-	if(NULL==w->item) {
+	if(NULL==(void*)w->item) {
 		w->item=newPred;
 	} else {
 		x=strcmp(w->item->name, new->name);
-		if(NULL==w->children) {
+		if(NULL==(void*)w->children) {
 			w->children=malloc(sizeof(PredicateLookupTree)*2);
 			w->children[0]=NULL;
 			w->children[1]=NULL;

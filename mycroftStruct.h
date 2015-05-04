@@ -39,9 +39,9 @@ typedef struct {
 
 /* Any list is an ArgList, not just the arg lists to preds!
  */
-typedef struct {
+typedef struct ArgList_t {
 	Argument* item;
-	ArgList* next;
+	struct ArgList_t* next;
 } ArgList;
 
 typedef Argument* (*MycForeignFunction)(ArgList*);
@@ -66,10 +66,10 @@ typedef struct {
 } ArityConversion;
 
 typedef struct {
-	ArityConversion* correspondences;	/* Two sets of correspondences: one between the parent and each child */
+	ArityConversion** correspondences;	/* Two sets of correspondences: one between the parent and each child */
 	unsigned int andOr; 			/* Boolean: 0 -> OR, otherwise AND */
 	PredID* parent;
-	PredID* children;			/* Exactly two children */
+	PredID** children;			/* Exactly two children */
 	unsigned int isDet; 			/* Is this function noted as determinate? i.e., do we memoize it? */
 } PredDefinitionTree;
 
@@ -84,9 +84,9 @@ typedef struct {
 
 /* Lookup tree for facts matching a particular predicate ID... For the sake of simplicity, let's do a binary tree sorted on item->hash
  */
-typedef struct {
+typedef struct FactTree_t {
 	Fact* item;
-	FactTree* children; 			/* If children=NULL, we have no children; otherwise, we have an array of exactly two children */
+	struct FactTree_t** children; 			/* If children=NULL, we have no children; otherwise, we have an array of exactly two children */
 } FactTree;
 
 typedef struct {
@@ -97,9 +97,9 @@ typedef struct {
 
 /* Lookup tree for whole predicates. Use just like FactTree.
  */
-typedef struct {
+typedef struct PredicateLookupTree_t {
 	Predicate* item;
-	PredicateLookupTree* children;
+	struct PredicateLookupTree_t** children;
 } PredicateLookupTree;
 
 /**************************************************************************************

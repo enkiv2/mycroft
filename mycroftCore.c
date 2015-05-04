@@ -25,35 +25,35 @@ CompositeTruthVal* executePredicatePA(PredicateLookupTree* world, PredID* p, Arg
 		return f_out->truthy;
 	} else {
 		ret->truth=0; ret->confidence=0;
-		if(NULL==p_out) 			return ret;
-		if(NULL==p_out->defs) 			return ret;
-		if(NULL==p_out->defs->children) 	return ret;
-		if(NULL==p_out->defs->children[0]) 	return ret;
-		if(NULL==p_out->defs->children[1]) {
-			ret=executePredicatePA(world, p_out->defs->children[0], translateArgList(a, p_out->defs->conversions[0]));
+		if(NULL==(void*)p_out) 			return ret;
+		if(NULL==(void*)p_out->def) 			return ret;
+		if(NULL==(void*)p_out->def->children) 	return ret;
+		if(NULL==(void*)p_out->def->children[0]) 	return ret;
+		if(NULL==(void*)p_out->def->children[1]) {
+			ret=executePredicatePA(world,  (p_out->def->children[0]), translateArgList(a,  (p_out->def->correspondences[0])));
 		} else 	ret=
-			performPLBoolean(executePredicatePA(world, p_out->defs->children[0], translateArgList(a, p_out->defs->conversions[0])), 
-				executePredicatePA(world, p_out->defs->children[1], translateArgList(a, p_out->defs->conversions[1])),
-				p_out->defs->andOr);
+			performPLBoolean(executePredicatePA(world,  (p_out->def->children[0]), translateArgList(a,  (p_out->def->correspondences[0]))), 
+				executePredicatePA(world,  (p_out->def->children[1]), translateArgList(a,  (p_out->def->correspondences[1]))),
+				p_out->def->andOr);
 		if(MYC_ERR_NOERR!=MYCERR) {
 			ret->truth=0; ret->confidence=0;
-			if(NULL==MYCERR_STR) MYCERR_STR=error_string(MYCERR);
+			if(NULL==(void*)MYCERR_STR) MYCERR_STR=error_string(MYCERR);
 			char* argListStr=arg2String(createList(a));
 			char* tmp=malloc(1024+strlen(p->name)+strlen(MYCERR_STR)+strlen(argListStr));
 			sprintf(tmp, "%s at %s/%d %s%s\n", MYCERR_STR, p->name, p->arity, p->name, argListStr);
 			free(MYCERR_STR);
 			MYCERR_STR=tmp;
 		} else {
-			if(p_out->defs->isDet) {
+			if(p_out->def->isDet) {
 				insertFact(world, p, hash, ret);
 			}
 		}
 		return ret;
 	}
 }
-CompositeTruthVal* executePredicateNIA(PredicateLookupTree* world, char* pname, int arity, ArgList* a); {
+CompositeTruthVal* executePredicateNIA(PredicateLookupTree* world, char* pname, int arity, ArgList* a) {
 	return executePredicatePA(world, createPredID(pname, arity), a);
 }
-CompositeTruthVal* executePredicateNA(PredicateLookupTree* world, char* pname, ArgList* a); {
+CompositeTruthVal* executePredicateNA(PredicateLookupTree* world, char* pname, ArgList* a) {
 	 return executePredicateNIA(world, pname, listSize(a), a);
 }

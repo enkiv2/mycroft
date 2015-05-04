@@ -49,7 +49,7 @@ char* hashList(ArgList* list) {
 		strcpy(hash, tmp2);
 
 		l=l->next;
-	} while (l!=NULL)
+	} while (l!=NULL);
 	return hash;
 }
 /* Dumb function to get the length of a list */
@@ -65,7 +65,7 @@ Argument* getListItem(ArgList* list, int i) {
 	ArgList* l=list;
 	do {
 		l=l->next;
-		if(NULL==l) return NULL;
+		if(NULL==(void*)l) return NULL;
 	} while (i--);
 	return l->item;
 }
@@ -73,13 +73,13 @@ void setListItem(ArgList* list, int i, Argument* a) {
 	ArgList* l=list;
 	ArgList* tmp;
 	do {
-		if(NULL==l->next) {
+		if(NULL==(void*)l->next) {
 			tmp=malloc(sizeof(ArgList));
 			tmp->next=NULL;
 			tmp->item=NULL;
 			l->next=tmp;
 		}
 		l=l->next;
-	} while (i--)
+	} while (i--);
 	l->item=a;
 }
