@@ -18,5 +18,7 @@ mycroftList.o: mycroftList.c
 mycroftStruct.o: mycroftStruct.c
 	cc --std=c99 -I. -fPIC -c mycroftStruct.c -o mycroftStruct.o
 
+clean:
+	rm -f *.o *.so
 
 	
