@@ -1,5 +1,6 @@
 #!/usr/bin/env lua
 
+paranoid=false
 version=0.01
 banner=[[
    __  ___                  _____ 
@@ -148,6 +149,13 @@ builtins["lte/2"]=function(world, a, b)
 	if(a<=b) then return YES end
 	return NO
 end
+builtins["not/1"]=function(world, a) 
+	local ret={truth=a.truth, confidence=a.confidence}
+	ret.truth=1.0-ret.truth
+	if(ret.truth<0) then ret.truth=ret.truth*-1 end
+	return canonicalizeCTV(ret)
+end
+helpText["not/1"]="Invert the truth component of a truth value"
 builtins["builtins/0"]=function(world) for k,v in pairs(builtins) do print(tostring(k)) end return YES end
 helpText["builtins/0"]="builtins/0\tprint all built-in predicates"
 builtins["help/0"]=function(world) print(help) return YES end
@@ -172,6 +180,120 @@ helpText["banner/0"]=helpText["banner"]
 builtins["banner/0"]=function(world) print(helpText["banner"]) return YES end
 helpText["welcome/0"]=helpText["banner"].."\nType help(). for help, and copying(). for copying information.\n"
 builtins["welcome/0"]=function(world) print(helpText["welcome/0"]) return YES end
+builtins["addpeer/2"]=function(world, address, port) table.insert(mycnet.peers, {address, tonumber(port)}) return YES end
+if(paranoid) then 
+	builtins["setport/1"]=function(world, port) return NO end -- paranoid version
+else
+	builtins["setport/1"]=function(world, port) mycnet.port=port return YES end -- security issue, but we trust the network
+end
+helpText["setport/1"]="setport(Port)\tset the listening port for peers to connect to"
+helpText["addpeer/2"]="addpeer(Address,Port)\tadd a peer with the specified info"
+
+mycnet={}
+function setupNetworkingNMCU()
+	setupNetworkingCommon()
+	setupNetworkingDummy() --XXX
+end
+function setupNetworkingLJIT()
+	setupNetworkingCommon()
+	setupNetworkingDummy() --XXX
+end
+function setupNetworkingLSOCK()
+	setupNetworkingCommon()
+	socket=require("socket")
+	if(nil==socket) then
+		print("debug: luasocket failed to load; falling back to dummy")
+		return setupNetworkingDummy()
+	end
+	mycnet.server=socket.bind("*", mycnet.port, mycnet.backlog)
+	if(nil==mycnet.server) then return setupNetworkingDummy() end
+	mycnet.server:settimeout(0.1, 't')
+	mycnet.forwardRequest=function(world, c) 
+		local peer=mycnet.getNextPeer(world)
+		if(nil==peer) then return nil end
+		local client=socket.connect(unpack(peer))
+		while(nil==client) do
+			peer=mycnet.getNextPeer(world)
+			if(nil==peer) then return nil end
+			client=socket.connect(unpack(peer))
+		end
+		client:send(c)
+		local ret=client:recieve()
+		return ret
+	end -- send a line of code to next peer
+	mycnet.checkMailbox=function(world) 
+		local client=mycnet.server:accept()
+		if(nil==client) then return mycnet.mailbox end
+		client:settimeout(10)
+		local line,err=client:recieve()
+		if(nil~=line) then
+			if(string.find(line, '^ *%?%-')~=nil) then
+				client:send(serialize(parseLine(world, line)))
+			else
+				table.insert(mycnet.mailbox, {line, client:getpeername()})
+			end
+		end
+		client:close()
+	end -- get a list of requests from peers
+end
+function setupNetworkingCommon()
+	mycnet.port=1960 -- hardcode default for now
+	mycnet.backlog=512
+	mycnet.peers={}
+	mycnet.mailbox={}
+	mycnet.pptr=1
+	mycnet.forwardedLines={}
+	mycnet.getPeers=function(world) return mycnet.peers end -- get a list of peers
+	mycnet.getCurrentPeer=function(world) return mycnet.peers[mycnet.pttr] end 
+	mycnet.getNextPeer=function(world) 
+		mycnet.pptr=mycnet.pptr+1 
+		if(mycnet.pptr>#mycnet.peers) then mycnet.pptr=1 end
+		return mycnet.getCurrentPeer(world)
+	end -- round robin
+	mycnet.yield=function(world)
+		mycnet.checkMailbox(world)
+		if(#mycnet.mailbox>0) then
+			local item=mycnet.mailbox[1]
+			table.remove(mycnet.mailbox, 1)
+			local line=item[1]
+			ret=parseLine(world, line)
+			return nil
+		end
+	end -- process one step of somebody else's request
+	mycnet.forwardFact=function(world, l)
+		if(mycnet.forwardedLines[l]) then return nil end
+		mycnet.forwardedLines[l]=true
+		local start=mycnet.getCurrentPeer(world)
+		if(nil==start) then return nil end
+		mycnet.forwardRequest(world, line)
+		while(start~=mycnet.getCurrentPeer()) do
+			mycnet.forwardRequest(world, line)
+		end
+		return nil
+	end
+end
+function setupNetworkingDummy()
+	mycnet.getPeers=function() return {} end -- get a list of peers
+	mycnet.getCurrentPeer=function() return nil end 
+	mycnet.getNextPeer=function() return nil end -- round robin
+	mycnet.forwardRequest=function(c) return nil end -- send a line of code to next peer
+	mycnet.forwardFact=function(c) return nil end -- send a line of code to next peer
+	mycnet.checkMailbox=function() return {} end -- get a list of requests from peers
+	mycnet.yield=function() return nil end -- process one step of somebody else's request
+end
+function setupNetworking()
+	if(nil~=node) then
+		if(nil~=node.chipid) then
+			if(nil~=node.chipid()) then
+				return setupNetworkingNMCU()
+			end
+		end
+	end
+	if(jit~=nil) then
+		return setupNetworkingLJIT()
+	end
+	return setupNetworkingLSOCK()
+end
 
 
 function translateArgList(list, conv) -- given an arglist and a conversion map, produce a new arglist with the order transformed
@@ -564,9 +686,9 @@ function parseTruth(x)
 	string.gsub(
 		string.gsub(
 			string.gsub(
-				string.gsub(x, " *< *(%d+) *, *(%d+) *> *", function (t, c) tr={truth=tonumber(t), confidence=tonumber(c)} return "" end ),
-				" *< *(%d+) *| *", function(t) tr={truth=tonumber(t), confidence=1} return "" end),
-			" *| *(%d+) *> *", function(c) tr={truth=1, confidence=tonumber(t)} return "" end ),
+				string.gsub(x, " *< *(%d*%.?%d+) *[,"..string.char(127).."] *(%d*%.?%d+) *> *", function (t, c) tr={truth=tonumber(t), confidence=tonumber(c)} return "" end ),
+				" *< *(%d*%.?%d+) *| *", function(t) tr={truth=tonumber(t), confidence=1} return "" end),
+			" *| *(%d*%.?%d+) *> *", function(c) tr={truth=1, confidence=tonumber(t)} return "" end ),
 		" *(%w+) *", 
 		function (c)
 			if (c=="YES") then tr={truth=1, confidence=1} 
@@ -583,10 +705,10 @@ function parseArgs(world, pargs)
 	local args
 	args={}
 	pargs=string.gsub(
-			string.gsub(
+			string.gsub(string.gsub(
 				string.gsub(
 					string.gsub(string.gsub(pargs, "^%(", ""), "%)$", ""), 
-				"%b\"\"", function(c)   return string.gsub(c, ",", string.char(127)) end ), 
+				"%b\"\"", function(c)   return string.gsub(c, ",", string.char(127)) end ), "%b<>", function(c) return string.gsub(c, ",", string.char(127)) end ), 
 			"([^,]+)", function (c) table.insert(args, parseItem(world, c)) end ), 
 		string.char(127), ",")
 	for i,j in ipairs(args) do if(type(args)=="string") then args[i]=string.gsub(j, string.char(127), ",") end end
@@ -685,10 +807,19 @@ function parsePred(world, det, pname, pargs, pdef)
 end
 function parseBodyComponents(world, body) 
 	local items={}
-	string.gsub(string.gsub(body, " *(%w+) *(%b()) *", 
+	string.gsub(string.gsub(string.gsub(string.gsub(string.gsub(body, " *(%w+) *(%b()) *", 
 		function (pname, pargs) 
 			table.insert(items, executePredicateNA(world, pname, parseArgs(world, pargs)))
 			return "" 
+		end), "(%b<>)", function(c) 
+			local x=parseItem(world, c) 
+			table.insert(items, x)
+		end), "(%b<|)", function(c) 
+			local x=parseItem(world, c) 
+			table.insert(items, x)
+		end), "(%b|>)", function(c) 
+			local x=parseItem(world, c) 
+			table.insert(items, x)
 		end), "(.+)", function(c) 
 			local x=parseItem(world, c) 
 			table.insert(items, x)
@@ -704,10 +835,11 @@ function parseAndComponent(world, andComponent, andTBL)
 end
 function parseOrComponent(world, orComponent, orTBL)
 	local andTBL={}
-	string.gsub(string.gsub(
+	string.gsub(string.gsub(string.gsub(
 		string.gsub(orComponent, "(.*)%) *,", 
 			function(andComponent) return parseAndComponent(world, andComponent..")", andTBL) end
 			), " *(%w+) *(%b()) *", function(pfx,sfx) return parseAndComponent(world, pfx..sfx, andTBL) end
+			), " *([<|][^>|]+[>|]) *", function(andComponent) return parseAndComponent(world, andComponent, andTBL) end
 		),  "([^,]+)",
 			function(andComponent) return parseAndComponent(world, andComponent, andTBL) end)
 	local head=NO
@@ -730,10 +862,14 @@ function parseLine(world, line)
 	return serialize(string.gsub(
 		string.gsub(line, "^(%l%w+)  *(%l%w+) *(%b()) *:%- *([^.]+). *$", 
 			function (det, pname, pargs, pdef) 
+				mycnet.forwardFact(world, line)
 				return serialize(parsePred(world, det, pname, pargs, pdef))
 			end),
-		"^%?%- *([^.]+) *%.$", 
+		"^%?%- *(.+) *%.$", 
 		function (body) 
+			local ret=mycnet.forwardRequest("?- "..body..".")
+			if(ret~=nil) then ret=canonicalizeCTV(parseTruth(ret)) end
+			if(ret~=nil and not cmpTruth(ret, NC)) then return ret end
 			local orTBL={}
 			string.gsub(body, "([^;]+)", 
 				function(orComponent) return parseOrComponent(world, orComponent, orTBL) end)
@@ -775,6 +911,7 @@ end
 
 function main(argv)
 	local world, interactive, i, arg, f
+	setupNetworking()
 	world={}
 	interactive=false
 	if(#argv==0) then
