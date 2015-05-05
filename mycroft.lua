@@ -515,7 +515,14 @@ function parseTruth(x)
 				string.gsub(x, " *< *(%d+) *, *(%d+) *> *", function (t, c) tr={truth=tonumber(t), confidence=tonumber(c)} return "" end ),
 				" *< *(%d+) *| *", function(t) tr={truth=tonumber(t), confidence=1} return "" end),
 			" *| *(%d+) *> *", function(c) tr={truth=1, confidence=tonumber(t)} return "" end ),
-		"(%w+)", function (c) if (c=="YES") then tr={truth=1, confidence=1} elseif (c=="NO") then tr={truth=0, confidence=1} elseif (c=="NC") then tr={truth=0, confidence=0} else return c end return "" end)
+		" *(%w+) *", 
+		function (c)
+			if (c=="YES") then tr={truth=1, confidence=1} 
+			elseif (c=="NO") then tr={truth=0, confidence=1} 
+			elseif (c=="NC") then tr={truth=0, confidence=0} 
+			else return c end 
+			return "" 
+		end)
 	if(nil==tr) then return x end
 	return tr
 end
@@ -530,8 +537,8 @@ function parseArgs(pargs)
 				"%b\"\"", function(c)   return string.gsub(c, ",", string.char(127)) end ), 
 			"([^,]+)", function (c) table.insert(args, parseItem(c)) end ), 
 		string.char(127), ",")
-	for i,j in ipairs(args) do args[i]=string.gsub(j, string.char(127), ",") end
-	print("ARGS: "..serialize(args))
+	for i,j in ipairs(args) do if(type(args)=="string") then args[i]=string.gsub(j, string.char(127), ",") end end
+	--print("ARGS: "..serialize(args))
 	return args
 end
 
@@ -611,15 +618,70 @@ function parsePred(world, det, pname, pargs, pdef)
 	end
 	return ""
 end
+function parseBodyComponents(body) 
+	local items={}
+	string.gsub(string.gsub(body, " *(%w+) *(%b()) *", 
+		function (pname, pargs) 
+			table.insert(items, executePredicateNA(world, pname, parseArgs(pargs)))
+			return "" 
+		end), "(.+)", function(c) 
+			local x=parseItem(c) 
+			if(nil~=x.truth) then
+				table.insert(items, x)
+			else
+				print("WARNING: item "..serialize(c).." in pred body is neither a truth value nor a pred call; evaluating to NC")
+				table.insert(items, NC)
+			end
+		end)
+	return items
+end
+
+function parseAndComponent(andComponent, andTBL)
+	for i,v in ipairs(parseBodyComponents(andComponent)) do
+		table.insert(andTBL, v)
+	end
+	return ""
+end
+function parseOrComponent(orComponent, orTBL)
+	local andTBL={}
+	string.gsub(string.gsub(orComponent, "(.*)%) *,", 
+		function(andComponent) return parseAndComponent(andComponent..")", andTBL) end
+		), "(.+)",
+			function(andComponent) return parseAndComponent(andComponent, andTBL) end)
+	local head=NO
+	if(#andTBL>0) then
+		head=andTBL[1]
+		table.remove(andTBL, 1)
+		for i,v in ipairs(andTBL) do
+			head=performPLBoolean(head, v, "and")
+		end
+	end
+	table.insert(orTBL, head)
+	return ""
+end
 
 function parseLine(world, line)
 	if(nil==line) then return line end
 	if(""==line) then return line end
 	if("#"==line[0]) then return "" end
-	return string.gsub(
-		string.gsub(line, "^(%l%w+)  *(%l%w+) *(%b()) *:%- *([^.]+). *$", function (det, pname, pargs, pdef) return parsePred(world, det, pname, pargs, pdef) end),
-		"^%?%- *(%w+) *(%b()) *%.$", function (pname, pargs) return serialize(executePredicateNA(world, pname, parseArgs(pargs))) end)
-end
+	return serialize(string.gsub(
+		string.gsub(line, "^(%l%w+)  *(%l%w+) *(%b()) *:%- *([^.]+). *$", 
+			function (det, pname, pargs, pdef) 
+				return serialize(parsePred(world, det, pname, pargs, pdef))
+			end),
+		"^%?%- *([^.]+) *%.$", 
+		function (body) 
+			local orTBL={}
+			string.gsub(body, "([^;]+)", 
+				function(orComponent) return parseOrComponent(orComponent, orTBL) end)
+			local head=NO
+			for i,v in ipairs(orTBL) do
+				head=performPLBoolean(head,v,"or")
+			end 
+			return serialize(head)
+		end
+	))
+end 
 
 function parseFile(world, file)
 	local line
@@ -635,7 +697,7 @@ function mainLoop(world)
 	line=io.read("*l")
 	if(nil==line) then os.exit() end
 	if(nil==string.find(line, ":%-")) then line="?- "..line end
-	print("LINE: "..line)
+	--print("LINE: "..line)
 	print(serialize(parseLine(world, line)))
 end
 
