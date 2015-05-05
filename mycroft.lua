@@ -704,6 +704,7 @@ function parseOrComponent(world, orComponent, orTBL)
 end
 
 function parseLine(world, line)
+	clearSymbolSpace(world)
 	if(nil==line) then return line end
 	if(""==line) then return line end
 	if("#"==line[0]) then return "" end
