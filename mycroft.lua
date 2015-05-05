@@ -489,7 +489,7 @@ end
 
 
 -- test suite
-function test()
+function testSerialize()
 	print(serialize(YES))
 	print(serialize(NO))
 	print(serialize(NC))
@@ -506,6 +506,8 @@ function test()
 	print(MYCERR_STR)
 	MYCERR_STR=""
 	MYCERR=MYC_ERR_NOERR
+end
+function testBool()
 	print("YES and NO = "..serialize(performPLBoolean(YES, NO, "and")))
 	print("YES or NO = "..serialize(performPLBoolean(YES, NO, "or")))
 	print("YES and NC = "..serialize(performPLBoolean(YES, NC, "and")))
@@ -530,6 +532,8 @@ function test()
 	print("NO or |0.5> = "..serialize(performPLBoolean(NO, {truth=1, confidence=0.5}, "or")))
 	print("NC and |0.5> = "..serialize(performPLBoolean(NC, {truth=1, confidence=0.5}, "and")))
 	print("NC or |0.5> = "..serialize(performPLBoolean(NC, {truth=1, confidence=0.5}, "or")))
+end
+function testCore()
 	world={}
 	truePred=createPredID("true", 0)
 	falsePred=createPredID("false", 0)
@@ -551,10 +555,13 @@ function test()
 	createDef(world, synPred5, {ncPred, falsePred}, {{{},{}}, {{},{}}}, "and", true)
 	createDef(world, synPred6, {ncPred, falsePred}, {{{},{}}, {{},{}}}, "or", true)
 	createDef(world, synPred7, {truePred, falsePred, truePred}, {{{},{}}, {{},{}}, {{}, {}}}, "or", true)
+	print()
 	printWorld(world)
+	print()
 	print("true/0 -> "..serialize(executePredicateNA(world, "true", {})))
 	print("false/0 -> "..serialize(executePredicateNA(world, "false", {})))
 	print("noConfidence/0 ->"..serialize(executePredicateNA(world, "noConfidence", {})))
+	print()
 	print("synthetic/1 -> "..serialize(executePredicateNA(world, "synthetic", {1})))
 	print("synthetic/2 -> "..serialize(executePredicateNA(world, "synthetic", {1, 2})))
 	print("synthetic/3 -> "..serialize(executePredicateNA(world, "synthetic", {1, 2, 3})))
@@ -562,9 +569,20 @@ function test()
 	print("synthetic/5 -> "..serialize(executePredicateNA(world, "synthetic", {1, 2, 3, 4, 5})))
 	print("synthetic/6 -> "..serialize(executePredicateNA(world, "synthetic", {1, 2, 3, 4, 5, 6})))
 	print("synthetic/7 -> "..serialize(executePredicateNA(world, "synthetic", {1, 2, 3, 4, 5, 6, 7})))
-	print("printWorld/0 -> "..serialize(executePredicateNA(world, "printWorld", {})))
+	print()
+	print("builtins")
+	print("print/1(\"Hello, world!\") -> "..serialize(executePredicateNA(world, "print", {"Hello, world!"})))
 	print("printPred/1(true/0) -> "..serialize(executePredicateNA(world, "printPred", {truePred})))
+	print("printWorld/0 -> "..serialize(executePredicateNA(world, "printWorld", {})))
 	print(MYCERR_STR)
+end
+function testParse()
 	parseLine({}, "det true(x, y, z) :- YES.")
+end
+function test()
+	testSerialize()
+	testBool()
+	testCore()
+	testParse()
 end
 test()
