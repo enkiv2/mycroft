@@ -26,18 +26,22 @@ builtins["equal/2"]=function(world, a, b)
 	return NO
 end
 builtins["gt/2"]=function(world, a, b) 
+	if(type(a)=="table" or type(b)=="table") then return NC end
 	if(a>b) then return YES end
 	return NO
 end
 builtins["lt/2"]=function(world, a, b) 
+	if(type(a)=="table" or type(b)=="table") then return NC end
 	if(a<b) then return YES end
 	return NO
 end
 builtins["gte/2"]=function(world, a, b) 
+	if(type(a)=="table" or type(b)=="table") then return NC end
 	if(a>=b) then return YES end
 	return NO
 end
 builtins["lte/2"]=function(world, a, b) 
+	if(type(a)=="table" or type(b)=="table") then return NC end
 	if(a<=b) then return YES end
 	return NO
 end
@@ -490,36 +494,45 @@ end
 
 -- test suite
 function testSerialize()
-	print(serialize(YES))
-	print(serialize(NO))
-	print(serialize(NC))
-	print(serialize({truth=0.5, confidence=1}))
-	print(serialize({truth=1, confidence=0.5}))
-	print(serialize({truth=0.5, confidence=0.5}))
-	print(serialize(createPredID("test", 0)))
-	print(serialize({createPredID("test", 0), YES, NO, NC}))
-	print(error_string(MYC_ERR_NOERR))
-	print(error_string(MYC_ERR_DETNONDET))
-	print(error_string(MYC_ERR_UNDEFWORLD))
-	print(error_string("woah"))
-	print(serialize(executePredicateNA(nil, "failure", {})))
+	print("Testing serialization...")
+	print("YES -> "..serialize(YES))
+	print("NO -> "..serialize(NO))
+	print("NC -> "..serialize(NC))
+	print("<0.5| -> "..serialize({truth=0.5, confidence=1}))
+	print("|.05> -> "..serialize({truth=1, confidence=0.5}))
+	print("<0.5,0.5> -> "..serialize({truth=0.5, confidence=0.5}))
+	print()
+	print("test/0 -> "..serialize(createPredID("test", 0)))
+	print("(test/0,YES,NO,NC) ->"..serialize({createPredID("test", 0), YES, NO, NC}))
+	print()
+end
+function testErr()
+	print("Testing error reporting...")
+	print("MYC_ERR_NOERR -> "..error_string(MYC_ERR_NOERR))
+	print("MYC_ERR_DETNONDET -> "..error_string(MYC_ERR_DETNONDET))
+	print("MYC_ERR_UNDEFWORLD -> "..error_string(MYC_ERR_UNDEFWORLD))
+	print("error_string(\"woah\") -> "..error_string("woah"))
+	print("failure/0 in nil world -> "..serialize(executePredicateNA(nil, "failure", {})))
 	print(MYCERR_STR)
 	MYCERR_STR=""
 	MYCERR=MYC_ERR_NOERR
 end
 function testBool()
+	print("Testing booleans...")
 	print("YES and NO = "..serialize(performPLBoolean(YES, NO, "and")))
 	print("YES or NO = "..serialize(performPLBoolean(YES, NO, "or")))
 	print("YES and NC = "..serialize(performPLBoolean(YES, NC, "and")))
 	print("YES or NC = "..serialize(performPLBoolean(YES, NC, "or")))
 	print("NC and NO = "..serialize(performPLBoolean(NC, NO, "and")))
 	print("NC or NO = "..serialize(performPLBoolean(NC, NO, "or")))
+	print()
 	print("YES and <0.5, 0.5> = "..serialize(performPLBoolean(YES, {truth=0.5, confidence=0.5}, "and")))
 	print("YES or <0.5, 0.5> = "..serialize(performPLBoolean(YES, {truth=0.5, confidence=0.5}, "or")))
 	print("NO and <0.5, 0.5> = "..serialize(performPLBoolean(NO, {truth=0.5, confidence=0.5}, "and")))
 	print("NO or <0.5, 0.5> = "..serialize(performPLBoolean(NO, {truth=0.5, confidence=0.5}, "or")))
 	print("NC and <0.5, 0.5> = "..serialize(performPLBoolean(NC, {truth=0.5, confidence=0.5}, "and")))
 	print("NC or <0.5, 0.5> = "..serialize(performPLBoolean(NC, {truth=0.5, confidence=0.5}, "or")))
+	print()
 	print("YES and <0.5| = "..serialize(performPLBoolean(YES, {truth=0.5, confidence=1}, "and")))
 	print("YES or <0.5| = "..serialize(performPLBoolean(YES, {truth=0.5, confidence=1}, "or")))
 	print("NO and <0.5| = "..serialize(performPLBoolean(NO, {truth=0.5, confidence=1}, "and")))
@@ -532,8 +545,46 @@ function testBool()
 	print("NO or |0.5> = "..serialize(performPLBoolean(NO, {truth=1, confidence=0.5}, "or")))
 	print("NC and |0.5> = "..serialize(performPLBoolean(NC, {truth=1, confidence=0.5}, "and")))
 	print("NC or |0.5> = "..serialize(performPLBoolean(NC, {truth=1, confidence=0.5}, "or")))
+	print()
+end
+function testBuiltins()
+	print("Testing builtins...")
+	print("equal/2(1,1) -> "..serialize(executePredicateNA(world, "equal", {1, 1})))
+	print("equal/2(1,2) -> "..serialize(executePredicateNA(world, "equal", {1, 2})))
+	print("gt/2(1,1) -> "..serialize(executePredicateNA(world, "gt", {1, 1})))
+	print("gt/2(1,2) -> "..serialize(executePredicateNA(world, "gt", {1, 2})))
+	print("lt/2(1,1) -> "..serialize(executePredicateNA(world, "lt", {1, 1})))
+	print("lt/2(1,2) -> "..serialize(executePredicateNA(world, "lt", {1, 2})))
+	print("gte/2(1,1) -> "..serialize(executePredicateNA(world, "gte", {1, 1})))
+	print("gte/2(1,2) -> "..serialize(executePredicateNA(world, "gte", {1, 2})))
+	print("lte/2(1,1) -> "..serialize(executePredicateNA(world, "lte", {1, 1})))
+	print("lte/2(1,2) -> "..serialize(executePredicateNA(world, "lte", {1, 2})))
+	print("equal/2(YES,YES) -> "..serialize(executePredicateNA(world, "equal", {YES, YES})))
+	print("equal/2(YES,2) -> "..serialize(executePredicateNA(world, "equal", {YES, 2})))
+	print("gt/2(YES,YES) -> "..serialize(executePredicateNA(world, "gt", {YES, YES})))
+	print("gt/2(YES,2) -> "..serialize(executePredicateNA(world, "gt", {YES, 2})))
+	print("lt/2(YES,YES) -> "..serialize(executePredicateNA(world, "lt", {YES, YES})))
+	print("lt/2(YES,2) -> "..serialize(executePredicateNA(world, "lt", {YES, 2})))
+	print("gte/2(YES,YES) -> "..serialize(executePredicateNA(world, "gte", {YES, YES})))
+	print("gte/2(YES,2) -> "..serialize(executePredicateNA(world, "gte", {YES, 2})))
+	print("lte/2(YES,YES) -> "..serialize(executePredicateNA(world, "lte", {YES, YES})))
+	print("lte/2(YES,2) -> "..serialize(executePredicateNA(world, "lte", {YES, 2})))
+	print("equal/2(NO,NO) -> "..serialize(executePredicateNA(world, "equal", {NO, NO})))
+	print("equal/2(NO,2) -> "..serialize(executePredicateNA(world, "equal", {NO, 2})))
+	print("gt/2(NO,NO) -> "..serialize(executePredicateNA(world, "gt", {NO, NO})))
+	print("gt/2(NO,2) -> "..serialize(executePredicateNA(world, "gt", {NO, 2})))
+	print("lt/2(NO,NO) -> "..serialize(executePredicateNA(world, "lt", {NO, NO})))
+	print("lt/2(NO,2) -> "..serialize(executePredicateNA(world, "lt", {NO, 2})))
+	print("gte/2(NO,NO) -> "..serialize(executePredicateNA(world, "gte", {NO, NO})))
+	print("gte/2(NO,2) -> "..serialize(executePredicateNA(world, "gte", {NO, 2})))
+	print("lte/2(NO,NO) -> "..serialize(executePredicateNA(world, "lte", {NO, NO})))
+	print("lte/2(NO,2) -> "..serialize(executePredicateNA(world, "lte", {NO, 2})))
+	print()
+	print("print/1(\"Hello, world!\") -> "..serialize(executePredicateNA(world, "print", {"Hello, world!"})))
+	print()
 end
 function testCore()
+	print("Testing core...")
 	world={}
 	truePred=createPredID("true", 0)
 	falsePred=createPredID("false", 0)
@@ -570,19 +621,21 @@ function testCore()
 	print("synthetic/6 -> "..serialize(executePredicateNA(world, "synthetic", {1, 2, 3, 4, 5, 6})))
 	print("synthetic/7 -> "..serialize(executePredicateNA(world, "synthetic", {1, 2, 3, 4, 5, 6, 7})))
 	print()
-	print("builtins")
-	print("print/1(\"Hello, world!\") -> "..serialize(executePredicateNA(world, "print", {"Hello, world!"})))
 	print("printPred/1(true/0) -> "..serialize(executePredicateNA(world, "printPred", {truePred})))
 	print("printWorld/0 -> "..serialize(executePredicateNA(world, "printWorld", {})))
 	print(MYCERR_STR)
+	print()
 end
 function testParse()
-	parseLine({}, "det true(x, y, z) :- YES.")
+	print("Testing parse...")
+	print(parseLine({}, "det true(x, y, z) :- YES."))
 end
 function test()
 	testSerialize()
+	testErr()
 	testBool()
 	testCore()
+	testBuiltins()
 	testParse()
 end
 test()
