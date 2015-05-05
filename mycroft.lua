@@ -15,6 +15,7 @@ NO={truth=0, confidence=1}
 builtins={}
 builtins["print/1"]=function(world, c) print(c) return YES end
 builtins["printWorld/0"]=function(world) printWorld(world) return YES end
+builtins["printPred/1"]=function(world, p) if(nil==world[serialize(p)]) then return NO end print(strDef(world, serialize(p))) return YES end
 builtins["throw/1"]=function(world, c) throw(c) return YES end
 builtins["catch/1"]=function(world, c) if(MYCERR==c) then MYCERR=MYC_ERR_NOERR MYCERR_STR="" return YES end if(MYCERR==MYC_ERR_NOERR) then return YES end return NO end
 builtins["exit/0"]=function(world) os.exit() end
@@ -318,37 +319,46 @@ function printWorld(world)
 	print(strWorld(world))
 end
 
-function strWorld(world) 
-	local k, v, hash, val, argCount, i, ret
+function strDef(world, k)
+	local ret, argCount, args, hash, val, i, v
 	ret=""
-	for k,v in pairs(world) do
-		det=v.det
-		if(nil==v.det or v.det) then det="det" else det="nondet" end
-		if(nil~=v.facts) then
-			for hash,val in pairs(v.facts) do
-				ret=ret..det.." "..string.gsub(tostring(k), "/%d+$", "")..serialize(hash).." :- "..serialize(val)..".\n"
-			end
+	v=world[k]
+	if(nil==v) then return ret end
+	det=v.det
+	if(nil==v.det or v.det) then det="det" else det="nondet" end
+	if(nil~=v.facts) then
+		for hash,val in pairs(v.facts) do
+			ret=ret..det.." "..string.gsub(tostring(k), "/%d+$", "")..serialize(hash).." :- "..serialize(val)..".\n"
 		end
-		if(nil~=v.def) then
-			argCount=0
-			args={}
-			for i=1,v.arity do
-				args[i]="Arg"..tostring(i)
-			end
-			if(nil~=v.def.children) then
-				if(nil~=v.def.children[1]) then
-					if(nil~=v.def.children[2]) then
-						if(v.def.op=="or") then
-							ret=ret..det.." "..string.gsub(tostring(k), "/%d+$", "")..serialize(args).." :- "..v.def.children[1].name..serialize(translateArgList(args, v.def.correspondences[1])).."; "..v.def.children[2].name..serialize(translateArgList(args, v.def.correspondences[2]))..".\n"
-						else
-							ret=ret..det.." "..string.gsub(tostring(k), "/%d+$", "")..serialize(args).." :- "..v.def.children[1].name..serialize(translateArgList(args, v.def.correspondences[1]))..", "..v.def.children[2].name..serialize(translateArgList(args, v.def.correspondences[2]))..".\n"
-						end
+	end
+	if(nil~=v.def) then
+		argCount=0
+		args={}
+		for i=1,v.arity do
+			args[i]="Arg"..tostring(i)
+		end
+		if(nil~=v.def.children) then
+			if(nil~=v.def.children[1]) then
+				if(nil~=v.def.children[2]) then
+					if(v.def.op=="or") then
+						ret=ret..det.." "..string.gsub(tostring(k), "/%d+$", "")..serialize(args).." :- "..v.def.children[1].name..serialize(translateArgList(args, v.def.correspondences[1])).."; "..v.def.children[2].name..serialize(translateArgList(args, v.def.correspondences[2]))..".\n"
 					else
-						ret=ret..det.." "..tostring(k)..serialize(args).." :- "..v.def.children[1].name..serialize(translateArgList(args, v.def.correspondences[1]))..".\n"
+						ret=ret..det.." "..string.gsub(tostring(k), "/%d+$", "")..serialize(args).." :- "..v.def.children[1].name..serialize(translateArgList(args, v.def.correspondences[1]))..", "..v.def.children[2].name..serialize(translateArgList(args, v.def.correspondences[2]))..".\n"
 					end
+				else
+					ret=ret..det.." "..tostring(k)..serialize(args).." :- "..v.def.children[1].name..serialize(translateArgList(args, v.def.correspondences[1]))..".\n"
 				end
 			end
 		end
+	end
+	return ret
+end
+
+function strWorld(world) 
+	local k, v
+	ret=""
+	for k,v in pairs(world) do
+		ret=ret..strDef(world, k)
 	end
 	return "# State of the world\n"..ret
 end
@@ -517,6 +527,7 @@ function test()
 	print("synthetic/5 -> "..serialize(executePredicateNA(world, "synthetic", {1, 2, 3, 4, 5})))
 	print("synthetic/6 -> "..serialize(executePredicateNA(world, "synthetic", {1, 2, 3, 4, 5, 6})))
 	print("printWorld/0 -> "..serialize(executePredicateNA(world, "printWorld", {})))
+	print("printPred/1(true/0) -> "..serialize(executePredicateNA(world, "printPred", {truePred})))
 	print(MYCERR_STR)
 	parseLine({}, "det true(x, y, z) :- YES.")
 end
