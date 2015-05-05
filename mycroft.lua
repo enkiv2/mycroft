@@ -536,6 +536,7 @@ function parseArgs(pargs)
 end
 
 function parseStr(i)
+	if(type(i)=="table") then return i end
 	local ret=string.gsub(i, "%b\"\"", function (c) return string.gsub(string.gsub(c, "^\"", ""), "\"$", "") end )
 	return ret
 end
