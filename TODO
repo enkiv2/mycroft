@@ -1,6 +1,4 @@
-- Tests
-- Parser (current bison prototype won't work)
-- Internet layer (depends on parser or alternate protocol)
-- Bytecode? (possibly easier to do a bytecode & then compile to it)
-- Lua version? (ESP8266 looks like a *very* good target -- and parser and internet layer will be easier then -- but it'll be a challenge to produce a Lua version for nodemcu that will perform and not take up too much ram. Having a fast and small bytecode might help with this.)
+- Finish parser 
+- Internet layer (depends on parser, and ESP8266-specific code + luasocket alternative)
+- Minimizer? (ESP8266 might not have much flash)
 
