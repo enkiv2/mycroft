@@ -261,6 +261,13 @@ function throw(code, pred, hash, msg)
 	print(MYCERR_STR)
 end
 
+function createAnonDef(world, arity, preds, convs, op, det)
+	local spred
+	spred=createPredID("__ANONPRED"..tostring(anonPredCount), arity)
+	anonPredCount=anonPredCount+1
+	return createDef(world, spred, preds, convs, op, det)
+end
+
 function createDef(world, pred, preds, convs, op, det)
 	local p
 	if(nil==world) then return throw(MYC_ERR_UNDEFWORLD, pred, {}, " :- "..serialize({op, preds, conv})) end
@@ -294,11 +301,9 @@ function createDef(world, pred, preds, convs, op, det)
 			world[p].def.op=op
 		else
 			preds_head=preds[1]
-			table.remove(preds, 0)
+			table.remove(preds, 1)
 			convs_head=convs[1]
-			table.remove(convs, 0)
-			spred=createPredID("__ANONPRED"..tostring(anonPredCount), pred.arity)
-			anonPredCount=anonPredCount+1
+			table.remove(convs, 1)
 			sconv={}
 			sconv[1]={}
 			sconv[2]={}
@@ -306,13 +311,14 @@ function createDef(world, pred, preds, convs, op, det)
 				sconv[1][i]=i
 				sconv[2][i]=i
 			end
-			createDef(world, spred, preds, convs, op, det)
+			spred=createAnonDef(world, pred.arity, preds, convs, op, det)
 			return createDef(world, pred, {spred, preds_head}, {sconv, convs_head}, op, det)
 		end
 	else
 		world[p].def.children[1]=preds
 		world[p].def.correspondences[1]=convs
 	end 
+	return pred
 end
 
 function printWorld(world)
@@ -507,6 +513,7 @@ function test()
 	synPred4=createPredID("synthetic", 4)
 	synPred5=createPredID("synthetic", 5)
 	synPred6=createPredID("synthetic", 6)
+	synPred7=createPredID("synthetic", 7)
 	createFact(world, truePred, "()", YES)
 	createFact(world, falsePred, "()", NO)
 	createFact(world, ncPred, "()", NC)
@@ -516,6 +523,7 @@ function test()
 	createDef(world, synPred4, {truePred, ncPred}, {{{},{}}, {{},{}}}, "or", true)
 	createDef(world, synPred5, {ncPred, falsePred}, {{{},{}}, {{},{}}}, "and", true)
 	createDef(world, synPred6, {ncPred, falsePred}, {{{},{}}, {{},{}}}, "or", true)
+	createDef(world, synPred7, {truePred, falsePred, truePred}, {{{},{}}, {{},{}}, {{}, {}}}, "or", true)
 	printWorld(world)
 	print("true/0 -> "..serialize(executePredicateNA(world, "true", {})))
 	print("false/0 -> "..serialize(executePredicateNA(world, "false", {})))
@@ -526,6 +534,7 @@ function test()
 	print("synthetic/4 -> "..serialize(executePredicateNA(world, "synthetic", {1, 2, 3, 4})))
 	print("synthetic/5 -> "..serialize(executePredicateNA(world, "synthetic", {1, 2, 3, 4, 5})))
 	print("synthetic/6 -> "..serialize(executePredicateNA(world, "synthetic", {1, 2, 3, 4, 5, 6})))
+	print("synthetic/7 -> "..serialize(executePredicateNA(world, "synthetic", {1, 2, 3, 4, 5, 6, 7})))
 	print("printWorld/0 -> "..serialize(executePredicateNA(world, "printWorld", {})))
 	print("printPred/1(true/0) -> "..serialize(executePredicateNA(world, "printPred", {truePred})))
 	print(MYCERR_STR)
