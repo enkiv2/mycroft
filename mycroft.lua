@@ -167,15 +167,16 @@ function strWorld(world) -- return the code for all predicates as a string
 end
 
 function strDef(world, k) -- return the definition of the predicate k as a string
-	local ret, argCount, args, hash, val, i, v
+	local ret, argCount, args, hash, val, i, v, sep, pfx
 	ret=""
 	v=world[k]
 	if(nil==v) then return ret end
 	det=v.det
 	if(nil==v.det or v.det) then det="det" else det="nondet" end
+	pfx=det.." "..string.gsub(tostring(k), "/%d*$", "")
 	if(nil~=v.facts) then
 		for hash,val in pairs(v.facts) do
-			ret=ret..det.." "..string.gsub(tostring(k), "/%d+$", "")..serialize(hash).." :- "..serialize(val)..".\n"
+			ret=ret..pfx..serialize(hash).." :- "..serialize(val)..".\n"
 		end
 	end
 	if(nil~=v.def) then
@@ -186,15 +187,15 @@ function strDef(world, k) -- return the definition of the predicate k as a strin
 		end
 		if(nil~=v.def.children) then
 			if(nil~=v.def.children[1]) then
-				if(nil~=v.def.children[2]) then
+				ret=ret..pfx..serialize(args).." :- "..v.def.children[1].name..serialize(translateArgList(args, v.def.correspondences[1]))
+				if(nil==v.def.children[2]) then
+					sep=", "
 					if(v.def.op=="or") then
-						ret=ret..det.." "..string.gsub(tostring(k), "/%d+$", "")..serialize(args).." :- "..v.def.children[1].name..serialize(translateArgList(args, v.def.correspondences[1])).."; "..v.def.children[2].name..serialize(translateArgList(args, v.def.correspondences[2]))..".\n"
-					else
-						ret=ret..det.." "..string.gsub(tostring(k), "/%d+$", "")..serialize(args).." :- "..v.def.children[1].name..serialize(translateArgList(args, v.def.correspondences[1]))..", "..v.def.children[2].name..serialize(translateArgList(args, v.def.correspondences[2]))..".\n"
+						sep="; "
 					end
-				else
-					ret=ret..det.." "..tostring(k)..serialize(args).." :- "..v.def.children[1].name..serialize(translateArgList(args, v.def.correspondences[1]))..".\n"
+					ret=ret..sep..v.def.children[2].name..serialize(translateArgList(args, v.def.correspondences[2]))
 				end
+				ret=ret..".\n"
 			end
 		end
 	end
