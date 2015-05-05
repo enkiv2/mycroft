@@ -1,6 +1,13 @@
 #!/usr/bin/env lua
 
 version=0.01
+banner=[[
+   __  ___                  _____ 
+  /  |/  /_ _____________  / _/ /_ Composite
+ / /|_/ / // / __/ __/ _ \/ _/ __/     Logic
+/_/  /_/\_, /\__/_/  \___/_/ \__/   Language
+       /___/  v. ]]..tostring(version).."\n"
+
 copying=[[Mycroft (c) 2015, John Ohno.
 All rights reserved.
 
@@ -140,6 +147,13 @@ builtins["help/1"]=function(world,c)
 		return NO
 	end 
 return YES end
+builtins["copying/0"]=function(world) print(builtins["copying"]) end
+helpText["copying/0"]=helpText["copying"]
+helpText["banner"]=banner
+helpText["banner/0"]=helpText["banner"]
+builtins["banner/0"]=function(world) print(helpText["banner"]) return YES end
+helpText["welcome/0"]=helpText["banner"].."\nType help(). for help, and copying(). for copying information.\n"
+builtins["welcome/0"]=function(world) print(helpText["welcome/0"]) return YES end
 
 
 function translateArgList(list, conv) -- given an arglist and a conversion map, produce a new arglist with the order transformed
@@ -502,18 +516,33 @@ function parseTruth(x)
 				" *< *(%d+) *| *", function(t) tr={truth=tonumber(t), confidence=1} return "" end),
 			" *| *(%d+) *> *", function(c) tr={truth=1, confidence=tonumber(t)} return "" end ),
 		"(%w+)", function (c) if (c=="YES") then tr={truth=1, confidence=1} elseif (c=="NO") then tr={truth=0, confidence=1} elseif (c=="NC") then tr={truth=0, confidence=0} else return c end return "" end)
+	if(nil==tr) then return x end
 	return tr
 end
 
 function parseArgs(pargs)
 	local args
 	args={}
-	pargs=string.gsub(string.gsub(string.gsub(pargs, "^%(", ""), "%)$", ""), "([^, ]+)", function (c) table.insert(args, parseItem(c)) end )
+	pargs=string.gsub(
+			string.gsub(
+				string.gsub(
+					string.gsub(string.gsub(pargs, "^%(", ""), "%)$", ""), 
+				"%b\"\"", function(c)   return string.gsub(c, ",", string.char(127)) end ), 
+			"([^,]+)", function (c) table.insert(args, parseItem(c)) end ), 
+		string.char(127), ",")
+	for i,j in ipairs(args) do args[i]=string.gsub(j, string.char(127), ",") end
+	print("ARGS: "..serialize(args))
 	return args
 end
 
+function parseStr(i)
+	local ret=string.gsub(i, "%b\"\"", function (c) return string.gsub(string.gsub(c, "^\"", ""), "\"$", "") end )
+	return ret
+end
+
 function parseItem(i)
-	return parseTruth(string.gsub(i, "  *", ""))
+	local ret=parseStr(parseTruth(i))
+	return ret
 end
 
 function parsePredCall(pname, pargs)
@@ -583,7 +612,59 @@ function parsePred(world, det, pname, pargs, pdef)
 end
 
 function parseLine(world, line)
-	string.gsub(line, "^(%l%w+)  *(%l%w+) *(%b()) *:%- *([^.]+). *$", function (det, pname, pargs, pdef) return parsePred(world, det, pname, pargs, pdef) end)
+	if(nil==line) then return line end
+	if(""==line) then return line end
+	if("#"==line[0]) then return "" end
+	return string.gsub(
+		string.gsub(line, "^(%l%w+)  *(%l%w+) *(%b()) *:%- *([^.]+). *$", function (det, pname, pargs, pdef) return parsePred(world, det, pname, pargs, pdef) end),
+		"^%?%- *(%w+) *(%b()) *%.$", function (pname, pargs) return serialize(executePredicateNA(world, pname, parseArgs(pargs))) end)
+end
+
+function parseFile(world, file)
+	local line
+	line=file:read("*l")
+	while(nil~=line) do
+		parseLine(line)
+	end
+end
+
+-- interactive interpreter main loop
+function mainLoop(world)
+	io.write("?- ")
+	line=io.read("*l")
+	if(nil==line) then os.exit() end
+	if(nil==string.find(line, ":%-")) then line="?- "..line end
+	print("LINE: "..line)
+	print(serialize(parseLine(world, line)))
+end
+
+function main(argv)
+	local world, interactive, i, arg, f
+	world={}
+	interactive=false
+	if(#argv==0) then
+		interactive=true
+	else
+		for i,arg in ipairs(argv) do
+			if("-h"==arg or "-help"==arg or "--help"==arg or "-?"==arg) then
+				print("Usage:\n\tmycroft\nmycroft [-h|-?|--help|-help]\n\tmycroft [file1 file2...] [-i]\n\tmycroft -t")
+				print("Options:\n\t-h|-?|-help|--help\t\tPrint this help\n\t-i\t\t\tInteractive mode\n\t-t\t\t\tRun test suite")
+			elseif("-t"==arg) then test() os.exit()
+			elseif("-i"==arg) then interactive=true
+			else 
+				f, err=io.open(arg)
+				if(nil==f) then
+					print("Could not open file "..f.." for reading: "..tostring(err).."\nTry mycroft -h for help")
+					os.exit(1)
+				end
+				parseFile(world, f)
+			end
+		end
+	end
+	if(interactive) then
+		print(serialize(executePredicateNA(world, "welcome", {})))
+		while (true) do mainLoop(world) end
+	end
 end
 
 
@@ -730,6 +811,7 @@ end
 function testHelp()
 	print("Testing online help...")
 	print("help/0 -> "..serialize(executePredicateNA({}, "help", {})))
+	print("help/1(\"banner\") -> "..serialize(executePredicateNA({}, "help", {"banner"})))
 	print("help/1(\"syntax\") -> "..serialize(executePredicateNA({}, "help", {"syntax"})))
 	print("help/1(\"version\") -> "..serialize(executePredicateNA({}, "help", {"version"})))
 	print("help/1(\"copying\") -> "..serialize(executePredicateNA({}, "help", {"copying"})))
@@ -747,4 +829,5 @@ function test()
 	testParse()
 	testHelp()
 end
-test()
+
+main(arg)
