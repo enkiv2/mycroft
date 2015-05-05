@@ -66,7 +66,7 @@ The result of a query will be printed to standard output.
 
 anonPredCount=0
 
-MYCERR=""
+MYCERR=0
 MYCERR_STR=""
 MYC_ERR_NOERR=0
 MYC_ERR_DETNONDET=1
@@ -84,6 +84,8 @@ builtins["nc/0"]=function(world) return NC end
 helpText["true/0"]=[[true/0, false/0, nc/0 - return YES, NO, or NC, respectively]]
 helpText["false/0"]=helpText["true/0"]
 helpText["nc/0"]=helpText["true/0"]
+builtins["set/2"]=function(world, x, y) unificationSetItem(world, x, unificationGetItem(world, y)) return builtins["equal/2"](world, x, y) end
+helpText["set/2"]="set(X, Y) forces unification of X with Y, if possible."
 builtins["print/1"]=function(world, c) print(serialize(c)) return YES end
 helpText["print/1"]=[[print(X) will print the value of X to stdout]]
 builtins["printWorld/0"]=function(world) printWorld(world) return YES end
@@ -106,7 +108,9 @@ builtins["exit/0"]=function(world) os.exit() end
 helpText["exit/0"]="exit/0\texit interpreter with no error\nexit(X)\texit with error code X"
 builtins["exit/1"]=function(world, c) os.exit(c) end
 helpText["exit/1"]=helpText["exit/0"]
-builtins["equal/2"]=function(world, a, b) 
+builtins["equal/2"]=function(world, a, b)
+	a=unificationGetItem(world, a)
+	b=unificationGetItem(world, b)
 	if(a==b) then return YES end 
 	if(serialize(a)==serialize(b)) then return YES end
 	return NO
@@ -117,21 +121,29 @@ helpText["lt/2"]=helpText["equal/2"]
 helpText["gte/2"]=helpText["equal/2"]
 helpText["lte/2"]=helpText["equal/2"]
 builtins["gt/2"]=function(world, a, b) 
+	a=unificationGetItem(world, a)
+	b=unificationGetItem(world, b)
 	if(type(a)=="table" or type(b)=="table") then return NC end
 	if(a>b) then return YES end
 	return NO
 end
 builtins["lt/2"]=function(world, a, b) 
+	a=unificationGetItem(world, a)
+	b=unificationGetItem(world, b)
 	if(type(a)=="table" or type(b)=="table") then return NC end
 	if(a<b) then return YES end
 	return NO
 end
 builtins["gte/2"]=function(world, a, b) 
+	a=unificationGetItem(world, a)
+	b=unificationGetItem(world, b)
 	if(type(a)=="table" or type(b)=="table") then return NC end
 	if(a>=b) then return YES end
 	return NO
 end
 builtins["lte/2"]=function(world, a, b) 
+	a=unificationGetItem(world, a)
+	b=unificationGetItem(world, b)
 	if(type(a)=="table" or type(b)=="table") then return NC end
 	if(a<=b) then return YES end
 	return NO
@@ -182,6 +194,8 @@ function cmpTruth(p, q)
 end
 
 function canonicalizeCTV(r) -- snap to [0,1] and convert all zero-confidence CTVs to <0,0>
+	if(type(r)~="table") then return NC end
+	if(r.truth==nil or r.confidence==nil) then return NC end
 	if(r.confidence<0) then r.confidence=0 end
 	if(r.confidence==0) then return NC end
 	if(r.truth<0) then r.truth=0 end
@@ -192,6 +206,8 @@ end
 
 function performPLBoolean(p, q, op) -- compose truth values by boolean combination (PLN-like)
 	local r
+	p=canonicalizeCTV(p)
+	q=canonicalizeCTV(q)
 	r={}
 	if(op=='and') then
 		r.truth=p.truth*q.truth
@@ -216,6 +232,7 @@ function unificationGetItem(world, itemName)
 	if(type(itemName) ~= "string") then return itemName end
 	if(#itemName>0) then
 		if(string.find(itemName, '^%u')~=nil) then
+			if(world.symbols[itemName]==nil) then return itemName end
 			return world.symbols[itemName]
 		else return itemName end
 	end
@@ -226,8 +243,13 @@ function unificationSetItem(world, itemName, value)
 	if(type(itemName) ~= "string") then return itemName end
 	if(#itemName>0) then
 		if(string.find(itemName, '^%u')~=nil) then
-			world.symbols[itemName]=value
-			return value
+			if(world.symbols[itemName]==nil) then
+				world.symbols[itemName]=value
+				return value
+			elseif(world.symbols[itemName]~=value) then
+				throw(MYC_ERR_UNIF, "set/2", {itemName, value}, "\tCurrent value of "..serialize(itemName).." is "..serialize(world.symbols[itemName]))
+				return world.symbols[itemName]
+			end
 		else return itemName end
 	end
 	return itemName
@@ -426,7 +448,7 @@ function error_string(code) -- convert an error code to an error message
 	if(code==MYC_ERR_NOERR) then return "No error." 
 	elseif(code==MYC_ERR_DETNONDET) then return "Predicate marked determinate has indeterminate results."
 	elseif(code==MYC_ERR_UNDEFWORLD) then return "World undefined -- no predicates found."
-	else return "FIXME unknown/undocumented error." end
+	else return "FIXME unknown/undocumented error "..tostring(code).."." end
 end
 
 function throw(code, pred, hash, msg) -- throw an error, with a position in the code as pred(hash) and an error message
@@ -669,12 +691,7 @@ function parseBodyComponents(world, body)
 			return "" 
 		end), "(.+)", function(c) 
 			local x=parseItem(world, c) 
-			if(nil~=x.truth) then
-				table.insert(items, x)
-			else
-				print("WARNING: item "..serialize(c).." in pred body is neither a truth value nor a pred call; evaluating to NC")
-				table.insert(items, NC)
-			end
+			table.insert(items, x)
 		end)
 	return items
 end
@@ -687,9 +704,11 @@ function parseAndComponent(world, andComponent, andTBL)
 end
 function parseOrComponent(world, orComponent, orTBL)
 	local andTBL={}
-	string.gsub(string.gsub(orComponent, "(.*)%) *,", 
-		function(andComponent) return parseAndComponent(world, andComponent..")", andTBL) end
-		), "([^,]+)",
+	string.gsub(string.gsub(
+		string.gsub(orComponent, "(.*)%) *,", 
+			function(andComponent) return parseAndComponent(world, andComponent..")", andTBL) end
+			), " *(%w+) *(%b()) *", function(pfx,sfx) return parseAndComponent(world, pfx..sfx, andTBL) end
+		),  "([^,]+)",
 			function(andComponent) return parseAndComponent(world, andComponent, andTBL) end)
 	local head=NO
 	if(#andTBL>0) then
@@ -747,6 +766,11 @@ function mainLoop(world)
 	if(nil==string.find(line, ":%-")) then line="?- "..line end
 	--print("LINE: "..line)
 	print(serialize(parseLine(world, line)))
+	if(MYCERR~=MYC_ERR_NOERR) then
+		construct_traceback(MYCERR, "mainloop", {})
+		print(MYCERR_STR)
+		os.exit(1)
+	end
 end
 
 function main(argv)
