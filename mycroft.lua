@@ -43,12 +43,12 @@ builtins["lte/2"]=function(world, a, b)
 end
 
 
-function translateArgList(list, arity)
+function translateArgList(list, conv) -- given an arglist and a conversion map, produce a new arglist with the order transformed
 	local l, i, j
 	l={}
-	if(arity==nil) then return l end
-	for i,j in ipairs(arity[1]) do 
-		l[arity[2][i]]=list[arity[1][i]]
+	if(conv==nil) then return l end
+	for i,j in ipairs(conv[1]) do 
+		l[conv[2][i]]=list[conv[1][i]]
 	end
 	return l
 end
@@ -62,7 +62,7 @@ function cmpTruth(p, q)
 	return false
 end
 
-function canonicalizeCTV(r)
+function canonicalizeCTV(r) -- snap to [0,1] and convert all zero-confidence CTVs to <0,0>
 	if(r.confidence<0) then r.confidence=0 end
 	if(r.confidence==0) then return NC end
 	if(r.truth<0) then r.truth=0 end
@@ -71,7 +71,7 @@ function canonicalizeCTV(r)
 	return r
 end
 
-function performPLBoolean(p, q, op)
+function performPLBoolean(p, q, op) -- compose truth values by boolean combination (PLN-like)
 	local r
 	r={}
 	if(op=='and') then
@@ -92,7 +92,9 @@ function createPredID(pname, parity)
 	return {name=pname, arity=parity}
 end
 
-function serialize(args)
+
+-- pretty-printing functions
+function serialize(args) -- serialize in Mycroft syntax
 	local ret, sep
 	if(type(args)~="table") then
 		return tostring(args)
@@ -145,11 +147,64 @@ function serialize(args)
 	return ret..")"
 end
 
-function prettyPredID(p)
+function prettyPredID(p) -- serialize a predicate name, prolog-style
 	return p.name.."/"..p.arity
 end
 
-function factExists(world, p, hash)
+-- pretty-printing routines for predicate definition
+
+function printWorld(world) -- print all preds
+	print(strWorld(world))
+end
+
+function strWorld(world) -- return the code for all predicates as a string
+	local k, v
+	ret=""
+	for k,v in pairs(world) do
+		ret=ret..strDef(world, k)
+	end
+	return "# State of the world\n"..ret
+end
+
+function strDef(world, k) -- return the definition of the predicate k as a string
+	local ret, argCount, args, hash, val, i, v
+	ret=""
+	v=world[k]
+	if(nil==v) then return ret end
+	det=v.det
+	if(nil==v.det or v.det) then det="det" else det="nondet" end
+	if(nil~=v.facts) then
+		for hash,val in pairs(v.facts) do
+			ret=ret..det.." "..string.gsub(tostring(k), "/%d+$", "")..serialize(hash).." :- "..serialize(val)..".\n"
+		end
+	end
+	if(nil~=v.def) then
+		argCount=0
+		args={}
+		for i=1,v.arity do
+			args[i]="Arg"..tostring(i)
+		end
+		if(nil~=v.def.children) then
+			if(nil~=v.def.children[1]) then
+				if(nil~=v.def.children[2]) then
+					if(v.def.op=="or") then
+						ret=ret..det.." "..string.gsub(tostring(k), "/%d+$", "")..serialize(args).." :- "..v.def.children[1].name..serialize(translateArgList(args, v.def.correspondences[1])).."; "..v.def.children[2].name..serialize(translateArgList(args, v.def.correspondences[2]))..".\n"
+					else
+						ret=ret..det.." "..string.gsub(tostring(k), "/%d+$", "")..serialize(args).." :- "..v.def.children[1].name..serialize(translateArgList(args, v.def.correspondences[1]))..", "..v.def.children[2].name..serialize(translateArgList(args, v.def.correspondences[2]))..".\n"
+					end
+				else
+					ret=ret..det.." "..tostring(k)..serialize(args).." :- "..v.def.children[1].name..serialize(translateArgList(args, v.def.correspondences[1]))..".\n"
+				end
+			end
+		end
+	end
+	return ret
+end
+
+
+-- functions for code execution
+
+function factExists(world, p, hash) -- return a fact for the given pred/arglist pair if it exists, otherwise nil
 	local r,s
 	s=nil
 	r=world[prettyPredID(p)]
@@ -162,21 +217,7 @@ function factExists(world, p, hash)
 	return r
 end 
 
-function construct_traceback(p, hash)
-	if(type(p)=="table") then
-		ppid=prettyPredID(p)
-		pname=p.name
-	else
-		ppid=p
-		pname=p
-	end
-	if(MYCERR_STR=="") then
-		MYCERR_STR=error_string(MYCERR)
-	end
-	MYCERR_STR=MYCERR_STR.." at "..ppid.." "..pname..hash.."\n"
-end
-
-function executePredicatePA(world, p, args)
+function executePredicatePA(world, p, args) -- execute p with the given arglist
 	local ret, det, r, hash, ppid
 	hash=serialize(args)
 	ppid=prettyPredID(p)
@@ -214,20 +255,46 @@ function executePredicatePA(world, p, args)
 		return NC
 	end
 end
-function executePredicateNIA(world, pname, arity, args)
+function executePredicateNIA(world, pname, arity, args) -- execute pname/arity with the given arglist
 	return (executePredicatePA(world, createPredID(pname, arity), args))
 end
-function executePredicateNA(world, pname, args)
+function executePredicateNA(world, pname, args) -- execute pname/#args with the given arglist
 	return (executePredicateNIA(world, pname, #args, args))
 end
-function error_string(code) 
+
+-- internal error reporting system
+
+function construct_traceback(p, hash) -- add a line to the traceback
+	if(type(p)=="table") then
+		ppid=prettyPredID(p)
+		pname=p.name
+	else
+		ppid=p
+		pname=p
+	end
+	if(MYCERR_STR=="") then
+		MYCERR_STR=error_string(MYCERR)
+	end
+	MYCERR_STR=MYCERR_STR.." at "..ppid.." "..pname..hash.."\n"
+end
+
+function error_string(code) -- convert an error code to an error message
 	if(code==MYC_ERR_NOERR) then return "No error." 
 	elseif(code==MYC_ERR_DETNONDET) then return "Predicate marked determinate has indeterminate results."
 	elseif(code==MYC_ERR_UNDEFWORLD) then return "World undefined -- no predicates found."
 	else return "FIXME unknown/undocumented error." end
 end
 
-function createFact(world, pred, hash, truth)
+function throw(code, pred, hash, msg) -- throw an error, with a position in the code as pred(hash) and an error message
+	MYCERR=code
+	construct_traceback(serialize(pred), serialize(hash)..serialize(msg))
+	print(MYCERR_STR)
+end
+
+
+-- functions for constructing our internal predicate structure
+
+function createFact(world, pred, hash, truth) -- det pred(hash) :- truth.
 	if(type(pred)=="table") then
 		pred=serialize(pred)
 	end
@@ -255,20 +322,7 @@ function createFact(world, pred, hash, truth)
 	end
 end
 
-function throw(code, pred, hash, msg)
-	MYCERR=code
-	construct_traceback(serialize(pred), serialize(hash)..serialize(msg))
-	print(MYCERR_STR)
-end
-
-function createAnonDef(world, arity, preds, convs, op, det)
-	local spred
-	spred=createPredID("__ANONPRED"..tostring(anonPredCount), arity)
-	anonPredCount=anonPredCount+1
-	return createDef(world, spred, preds, convs, op, det)
-end
-
-function createDef(world, pred, preds, convs, op, det)
+function createDef(world, pred, preds, convs, op, det) -- define a predicate as a combination of given preds
 	local p
 	if(nil==world) then return throw(MYC_ERR_UNDEFWORLD, pred, {}, " :- "..serialize({op, preds, conv})) end
 	p=serialize(pred)
@@ -321,53 +375,23 @@ function createDef(world, pred, preds, convs, op, det)
 	return pred
 end
 
-function printWorld(world)
-	print(strWorld(world))
+-- functions for creating anonymous predicates
+function anonPredID(arity) -- produce a synthetic predID for an anonymous predicate
+	local spred
+	spred=createPredID("__ANONPRED"..tostring(anonPredCount), arity)
+	anonPredCount=anonPredCount+1
+	return spred
+end
+function createAnonDef(world, arity, preds, convs, op, det) -- define an anonymous predicate
+	return createDef(world, anonPredID(arity), preds, convs, op, det)
+end
+function createAnonFact(world, arity, hash, truth) -- create an anonymous fact
+	return createDef(world, anonPredID(arity), hash, truth)
 end
 
-function strDef(world, k)
-	local ret, argCount, args, hash, val, i, v
-	ret=""
-	v=world[k]
-	if(nil==v) then return ret end
-	det=v.det
-	if(nil==v.det or v.det) then det="det" else det="nondet" end
-	if(nil~=v.facts) then
-		for hash,val in pairs(v.facts) do
-			ret=ret..det.." "..string.gsub(tostring(k), "/%d+$", "")..serialize(hash).." :- "..serialize(val)..".\n"
-		end
-	end
-	if(nil~=v.def) then
-		argCount=0
-		args={}
-		for i=1,v.arity do
-			args[i]="Arg"..tostring(i)
-		end
-		if(nil~=v.def.children) then
-			if(nil~=v.def.children[1]) then
-				if(nil~=v.def.children[2]) then
-					if(v.def.op=="or") then
-						ret=ret..det.." "..string.gsub(tostring(k), "/%d+$", "")..serialize(args).." :- "..v.def.children[1].name..serialize(translateArgList(args, v.def.correspondences[1])).."; "..v.def.children[2].name..serialize(translateArgList(args, v.def.correspondences[2]))..".\n"
-					else
-						ret=ret..det.." "..string.gsub(tostring(k), "/%d+$", "")..serialize(args).." :- "..v.def.children[1].name..serialize(translateArgList(args, v.def.correspondences[1]))..", "..v.def.children[2].name..serialize(translateArgList(args, v.def.correspondences[2]))..".\n"
-					end
-				else
-					ret=ret..det.." "..tostring(k)..serialize(args).." :- "..v.def.children[1].name..serialize(translateArgList(args, v.def.correspondences[1]))..".\n"
-				end
-			end
-		end
-	end
-	return ret
-end
 
-function strWorld(world) 
-	local k, v
-	ret=""
-	for k,v in pairs(world) do
-		ret=ret..strDef(world, k)
-	end
-	return "# State of the world\n"..ret
-end
+
+-- parsing functions (WIP)
 
 function parseTruth(x)
 	local tr
@@ -462,6 +486,8 @@ function parseLine(world, line)
 	string.gsub(line, "^(%l%w+)  *(%l%w+) *(%b()) *:%- *([^.]+). *$", function (det, pname, pargs, pdef) return parsePred(world, det, pname, pargs, pdef) end)
 end
 
+
+-- test suite
 function test()
 	print(serialize(YES))
 	print(serialize(NO))
