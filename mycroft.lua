@@ -12,6 +12,36 @@ NC={truth=0, confidence=0}
 YES={truth=1, confidence=1}
 NO={truth=0, confidence=1}
 
+builtins={}
+builtins["print/1"]=function(world, c) print(c) return YES end
+builtins["printWorld/0"]=function(world) printWorld(world) return YES end
+builtins["throw/1"]=function(world, c) throw(c) return YES end
+builtins["catch/1"]=function(world, c) if(MYCERR==c) then MYCERR=MYC_ERR_NOERR MYCERR_STR="" return YES end if(MYCERR==MYC_ERR_NOERR) then return YES end return NO end
+builtins["exit/0"]=function(world) os.exit() end
+builtins["exit/1"]=function(world, c) os.exit(c) end
+builtins["equal/2"]=function(world, a, b) 
+	if(a==b) then return YES end 
+	if(serialize(a)==serialize(b)) then return YES end
+	return NO
+end
+builtins["gt/2"]=function(world, a, b) 
+	if(a>b) then return YES end
+	return NO
+end
+builtins["lt/2"]=function(world, a, b) 
+	if(a<b) then return YES end
+	return NO
+end
+builtins["gte/2"]=function(world, a, b) 
+	if(a>=b) then return YES end
+	return NO
+end
+builtins["lte/2"]=function(world, a, b) 
+	if(a<=b) then return YES end
+	return NO
+end
+
+
 function translateArgList(list, arity)
 	local l, i, j
 	l={}
@@ -149,6 +179,7 @@ function executePredicatePA(world, p, args)
 	local ret, det, r, hash, ppid
 	hash=serialize(args)
 	ppid=prettyPredID(p)
+	if(nil~=builtins[ppid]) then return builtins[ppid](world, unpack(args)) end
 	if(nil~=world) then
 		r=factExists(world, p, hash)
 		if(nil~=r) then return r end
@@ -407,7 +438,7 @@ function parsePred(world, det, pname, pargs, pdef)
 	ast=parseOr(pdef)
 	if(#ast>1) then handleOrs(world, isDet, pred, args, ast) else
 		handleAnds(world, isDet, pred, args, ast[1])
-	fi
+	end
 	return ""
 end
 
@@ -485,6 +516,7 @@ function test()
 	print("synthetic/4 -> "..serialize(executePredicateNA(world, "synthetic", {1, 2, 3, 4})))
 	print("synthetic/5 -> "..serialize(executePredicateNA(world, "synthetic", {1, 2, 3, 4, 5})))
 	print("synthetic/6 -> "..serialize(executePredicateNA(world, "synthetic", {1, 2, 3, 4, 5, 6})))
+	print("printWorld/0 -> "..serialize(executePredicateNA(world, "printWorld", {})))
 	print(MYCERR_STR)
 	parseLine({}, "det true(x, y, z) :- YES.")
 end
