@@ -78,6 +78,12 @@ NO={truth=0, confidence=1}
 
 builtins={}
 helpText={}
+builtins["true/0"]=function(world) return YES end
+builtins["false/0"]=function(world) return NO end
+builtins["nc/0"]=function(world) return NC end
+helpText["true/0"]=[[true/0, false/0, nc/0 - return YES, NO, or NC, respectively]]
+helpText["false/0"]=helpText["true/0"]
+helpText["nc/0"]=helpText["true/0"]
 builtins["print/1"]=function(world, c) print(serialize(c)) return YES end
 helpText["print/1"]=[[print(X) will print the value of X to stdout]]
 builtins["printWorld/0"]=function(world) printWorld(world) return YES end
