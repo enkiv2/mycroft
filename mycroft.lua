@@ -211,6 +211,30 @@ function createPredID(pname, parity)
 	return {name=pname, arity=parity}
 end
 
+function unificationGetItem(world, itemName)
+	if(nil==world.symbols) then world.symbols={} end
+	if(type(itemName) ~= "string") then return itemName end
+	if(#itemName>0) then
+		if(string.find(itemName, '^%u')~=nil) then
+			return world.symbols[itemName]
+		else return itemName end
+	end
+	return itemName
+end
+function unificationSetItem(world, itemName, value)
+	if(nil==world.symbols) then world.symbols={} end
+	if(type(itemName) ~= "string") then return itemName end
+	if(#itemName>0) then
+		if(string.find(itemName, '^%u')~=nil) then
+			world.symbols[itemName]=value
+			return value
+		else return itemName end
+	end
+	return itemName
+end
+function clearSymbolSpace(world)
+	world.symbols={}
+end
 
 -- pretty-printing functions
 function serialize(args) -- serialize in Mycroft syntax
@@ -533,7 +557,7 @@ function parseTruth(x)
 	return tr
 end
 
-function parseArgs(pargs)
+function parseArgs(world, pargs)
 	local args
 	args={}
 	pargs=string.gsub(
@@ -541,7 +565,7 @@ function parseArgs(pargs)
 				string.gsub(
 					string.gsub(string.gsub(pargs, "^%(", ""), "%)$", ""), 
 				"%b\"\"", function(c)   return string.gsub(c, ",", string.char(127)) end ), 
-			"([^,]+)", function (c) table.insert(args, parseItem(c)) end ), 
+			"([^,]+)", function (c) table.insert(args, parseItem(world, c)) end ), 
 		string.char(127), ",")
 	for i,j in ipairs(args) do if(type(args)=="string") then args[i]=string.gsub(j, string.char(127), ",") end end
 	--print("ARGS: "..serialize(args))
@@ -554,28 +578,41 @@ function parseStr(i)
 	return ret
 end
 
-function parseItem(i)
-	local ret=parseStr(parseTruth(i))
+function parseItem(world, i)
+	local ret=unificationGetItem(world, parseTruth(i))
+	ret=parseStr(ret)
 	return ret
 end
 
-function parsePredCall(pname, pargs)
+function parsePredCall(world, pname, pargs)
 	local args
-	args=parseargs(pargs)
+	args=parseargs(world, pargs)
 	return {createPredID(pname, #args), args}
 end
 
-function parseAnd(line)
+function parseAnd(world, line)
 	local t
 	t={}
-	string.gsub(string.gsub(line, "(%w+) *%b()", function (p, a) table.insert(t, parsePredCall(p, a)) return "" end), "([^,]+)", function (l) table.insert(t, parseItem(l)) return "" end)
+	print(line)
+	string.gsub(
+		string.gsub(line, "(%w+) *%b()", 
+			function (p, a) 
+				local s=parsePredCall(world, p, a) 
+				table.insert(t, s) 
+				return "" 
+			end), "([^,]+)", 
+		function (l) 
+			local s=parseItem(world, l)
+			table.insert(t, s)
+			return "" 
+		end)
 	return t
 end
 
-function parseOr(line)
+function parseOr(world, line)
 	local t
 	t={}
-	string.gsub(line, "([^;]+)", function (l) table.insert(t, parseAnd(l)) return "" end )
+	string.gsub(line, "([^;]+)", function (l) table.insert(t, parseAnd(world, l)) return "" end )
 	return t
 end
 
@@ -616,22 +653,22 @@ function parsePred(world, det, pname, pargs, pdef)
 		os.exit(1)
 	end
 	if(det=="det") then isDet=true else isDet=false end
-	args=parseArgs(pargs)
+	args=parseArgs(world, pargs)
 	pred=createPredID(pname, #args)
-	ast=parseOr(pdef)
+	ast=parseOr(world, pdef)
 	if(#ast>1) then handleOrs(world, isDet, pred, args, ast) else
 		handleAnds(world, isDet, pred, args, ast[1])
 	end
 	return ""
 end
-function parseBodyComponents(body) 
+function parseBodyComponents(world, body) 
 	local items={}
 	string.gsub(string.gsub(body, " *(%w+) *(%b()) *", 
 		function (pname, pargs) 
-			table.insert(items, executePredicateNA(world, pname, parseArgs(pargs)))
+			table.insert(items, executePredicateNA(world, pname, parseArgs(world, pargs)))
 			return "" 
 		end), "(.+)", function(c) 
-			local x=parseItem(c) 
+			local x=parseItem(world, c) 
 			if(nil~=x.truth) then
 				table.insert(items, x)
 			else
@@ -642,18 +679,18 @@ function parseBodyComponents(body)
 	return items
 end
 
-function parseAndComponent(andComponent, andTBL)
-	for i,v in ipairs(parseBodyComponents(andComponent)) do
+function parseAndComponent(world, andComponent, andTBL)
+	for i,v in ipairs(parseBodyComponents(world, andComponent)) do
 		table.insert(andTBL, v)
 	end
 	return ""
 end
-function parseOrComponent(orComponent, orTBL)
+function parseOrComponent(world, orComponent, orTBL)
 	local andTBL={}
 	string.gsub(string.gsub(orComponent, "(.*)%) *,", 
-		function(andComponent) return parseAndComponent(andComponent..")", andTBL) end
+		function(andComponent) return parseAndComponent(world, andComponent..")", andTBL) end
 		), "([^,]+)",
-			function(andComponent) return parseAndComponent(andComponent, andTBL) end)
+			function(andComponent) return parseAndComponent(world, andComponent, andTBL) end)
 	local head=NO
 	if(#andTBL>0) then
 		head=andTBL[1]
@@ -679,7 +716,7 @@ function parseLine(world, line)
 		function (body) 
 			local orTBL={}
 			string.gsub(body, "([^;]+)", 
-				function(orComponent) return parseOrComponent(orComponent, orTBL) end)
+				function(orComponent) return parseOrComponent(world, orComponent, orTBL) end)
 			local head=NC
 			if(#orTBL>0) then
 				head=orTBL[1]
