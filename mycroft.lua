@@ -646,7 +646,7 @@ function parseOrComponent(orComponent, orTBL)
 	local andTBL={}
 	string.gsub(string.gsub(orComponent, "(.*)%) *,", 
 		function(andComponent) return parseAndComponent(andComponent..")", andTBL) end
-		), "(.+)",
+		), "([^,]+)",
 			function(andComponent) return parseAndComponent(andComponent, andTBL) end)
 	local head=NO
 	if(#andTBL>0) then
@@ -674,7 +674,11 @@ function parseLine(world, line)
 			local orTBL={}
 			string.gsub(body, "([^;]+)", 
 				function(orComponent) return parseOrComponent(orComponent, orTBL) end)
-			local head=NO
+			local head=NC
+			if(#orTBL>0) then
+				head=orTBL[1]
+				table.remove(orTBL,1)
+			end
 			for i,v in ipairs(orTBL) do
 				head=performPLBoolean(head,v,"or")
 			end 
