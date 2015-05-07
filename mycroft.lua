@@ -371,7 +371,9 @@ end
 function setupNetworkingLSOCK()
 	debugPrint("detected luasocket; setting up.")
 	setupNetworkingCommon()
-	socket=require("socket")
+	if(pcall(require, "socket")) then
+		socket=require("socket")
+	end
 	if(nil==socket) then
 		debugPrint("luasocket failed to load; falling back to dummy")
 		return setupNetworkingDummy()
