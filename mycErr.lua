@@ -1,4 +1,3 @@
-
 -- internal error reporting system
 MYCERR=0
 MYCERR_STR=""

@@ -1,4 +1,3 @@
-
 -- test suite
 function testSerialize()
 	print("Testing serialization...")

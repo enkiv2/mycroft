@@ -1,4 +1,3 @@
-
 -- parsing functions (WIP)
 
 function parseTruth(x)

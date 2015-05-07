@@ -1,4 +1,3 @@
-
 mycnet={}
 function setupNetworkingNMCU()
 	debugPrint("detected NodeMCU; setting up.")

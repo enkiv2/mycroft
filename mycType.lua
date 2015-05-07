@@ -3,9 +3,6 @@ NC={truth=0, confidence=0}
 YES={truth=1, confidence=1}
 NO={truth=0, confidence=1}
 
-
-
-
 function translateArgList(list, conv) -- given an arglist and a conversion map, produce a new arglist with the order transformed
 	local l, i, j
 	l={}

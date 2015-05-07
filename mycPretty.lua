@@ -1,4 +1,3 @@
-
 -- pretty-printing functions
 function debugPrint(msg)
 	if(verbose) then print("debug: "..serialize(msg)) end
