@@ -62,6 +62,8 @@ A query is of the form:
 	?- predicateBody.
 The result of a query will be printed to standard output.
 ]]
+
+-- simple functions
 builtins["true/0"]=function(world) return YES end
 builtins["false/0"]=function(world) return NO end
 builtins["nc/0"]=function(world) return NC end
@@ -74,10 +76,18 @@ builtins["print/1"]=function(world, c) print(serialize(c)) return YES end
 helpText["print/1"]=[[print(X) will print the value of X to stdout, followed by a newline]]
 builtins["puts/1"]=function(world,c) io.write(serialize(c)) return YES end
 helpText["puts/1"]=[[print(X) will print the value of X to stdout]]
+builtins["exit/0"]=function(world) os.exit() end
+helpText["exit/0"]="exit/0\texit interpreter with no error\nexit(X)\texit with error code X"
+builtins["exit/1"]=function(world, c) os.exit(c) end
+helpText["exit/1"]=helpText["exit/0"]
+
+-- pretty-printing/introspection functions
 builtins["printWorld/0"]=function(world) printWorld(world) return YES end
 helpText["printWorld/0"]=[[printWorld() will print the definitions of all defined predicates]]
 builtins["printPred/1"]=function(world, p) if(nil==world[serialize(p)]) then return NO end print(strDef(world, serialize(p))) return YES end
 helpText["printPred/1"]=[[printPred(X) will print the definition of the predicate X to stdout, if X is defined]]
+
+-- error-related functions
 builtins["throw/1"]=function(world, c) throw(c) return YES end
 helpText["throw/1"]=[[throw(X) will throw the error represented by the error code X
 Available error codes include:
@@ -90,10 +100,8 @@ Available error codes include:
 MYC_ERR_NOERR	]]..tostring(MYC_ERR_NOERR)..[[	no error
 MYC_ERR_UNDEFWORLD	]]..tostring(MYC_ERR_UNDEFWORLD)..[[	world undefined
 MYC_ERR_DETNONDET	]]..tostring(MYC_ERR_DETNONDET)..[[	determinacy conflict: predicate marked det is not determinate, or a predicate marked nondet is having a fact assigned to it]]
-builtins["exit/0"]=function(world) os.exit() end
-helpText["exit/0"]="exit/0\texit interpreter with no error\nexit(X)\texit with error code X"
-builtins["exit/1"]=function(world, c) os.exit(c) end
-helpText["exit/1"]=helpText["exit/0"]
+
+-- comparison functions
 builtins["equal/2"]=function(world, a, b)
 	a=unificationGetItem(world, a)
 	b=unificationGetItem(world, b)
@@ -141,6 +149,8 @@ builtins["not/1"]=function(world, a)
 	return canonicalizeCTV(ret)
 end
 helpText["not/1"]="Invert the truth component of a truth value"
+
+-- composition functions
 builtins["add/3"]=function(world, a, b, r) 
 	a=unificationGetItem(world, a)
 	b=unificationGetItem(world, b)
@@ -213,9 +223,12 @@ helpText["div/3"]=helpText["add/3"]
 helpText["concat/3"]="concat(A,B,X)\tSet X to the string concatenation of A and B"
 helpText["append/3"]="append(A,B,X)\tSet X to a list consisting of the item B appended to the end of the list A. If A is not a list, set X to a list consisting of items A and B."
 
+
 function initBuiltins()
-	if(not paranoid) then
-		function constructOpeners() -- for handling chunking of multiline code. Not reliable!
+	if(not paranoid) then -- define unsafe builtin functions 
+		-- Anything that would be a security risk if untrusted nodes could submit it should be defined *here*
+
+		function constructOpeners() -- for handling chunking of multiline code, needed by getBuiltin/2. Not reliable! 
 			closers={}
 			closers["end"]=true
 			openers={}
@@ -223,8 +236,50 @@ function initBuiltins()
 			openers["if"]=true
 			openers["function"]=true
 		end
+		function getChunk(filename, linedefined)
+			local ret
+			debugPrint("source filename: "..filename)
+			debugPrint("source file line number: "..tostring(info.linedefined))
+			local f=io.open(filename)
+			if(nil~=f and nil~=linedefined) then
+				local i, l, unclosed
+				i=1
+				l=f:read("*l")
+				while(i<linedefined and l~=nil) do
+					i=i+1
+					l=f:read("*l")
+				end
+				if(i==linedefined) then
+					if(openers==nil) then
+						constructOpeners()
+					end
+					ret=string.gsub(tostring(l), "builtins.+= *(function *.+)$", function(c) return c end)
+					unclosed=0
+					string.gsub(ret, "(%w+)", function(c) 
+						if(closers[c]) then unclosed=unclosed-1
+						elseif(openers[c]) then unclosed=unclosed+1
+						end
+					end)
+					while (unclosed>0 and l~=nil) do
+						l=f:read("*l")
+						if(l~=nil) then
+							ret=ret.."\n"..l
+							string.gsub(l, "(%w+)", function(c) 
+								if(closers[c]) then unclosed=unclosed-1
+								elseif(openers[c]) then unclosed=unclosed+1
+								end
+							end)
+						end
+					end
+				end
+				f:close()
+			end
+			return ret
+		end
+
 		helpText["interact/0"]=[[Go into interactive interpreter mode]]
 		builtins["interact/0"]=function(world) local x=mainLoop(world) while(x) do mainLoop(world) end return YES end
+
 		helpText["setParanoia/1"]=[[setParanoia(YES) will turn on paranoid mode]]
 		builtins["setParanoia/1"]=function(world, x) 
 			if(cmpTruth(unificationGetItem(world, x), YES)) then 
@@ -233,6 +288,7 @@ function initBuiltins()
 			end 
 			return NO 
 		end
+
 		helpText["setBuiltin/2"]="setBuiltin(Name,LuaSource) will set the builtin with the signature Name to the function defined by LuaSource. If LuaSource is not valid lua source code, NO will be returned, otherwise YES. Please note that the signature must be of the form name/arity, or else it will not be executable from mycroft!"
 		builtins["setBuiltin/2"]=function(world, x, y)
 			local completeString="local func\nfunc="..serialize(unificationGetItem(world, y)).." return func"
@@ -260,42 +316,8 @@ function initBuiltins()
 					if(#info.source>0) then
 						if(string.find(info.source, '^%@')~=nil) then
 							local filename=string.gsub(info.source, '^%@(.+)$', function(c) return c end)
-							debugPrint("source filename: "..filename)
-							debugPrint("source file line number: "..tostring(info.linedefined))
-							local f=io.open(filename)
-							if(nil~=f and nil~=info.linedefined) then
-								local i, l, unclosed
-								i=1
-								l=f:read("*l")
-								while(i<info.linedefined and l~=nil) do
-									i=i+1
-									l=f:read("*l")
-								end
-								if(i==info.linedefined) then
-									if(openers==nil) then
-										constructOpeners()
-									end
-									ret=string.gsub(tostring(l), "builtins.+= *(function *.+)$", function(c) return c end)
-									unclosed=0
-									string.gsub(ret, "(%w+)", function(c) 
-										if(closers[c]) then unclosed=unclosed-1
-										elseif(openers[c]) then unclosed=unclosed+1
-										end
-									end)
-									while (unclosed>0 and l~=nil) do
-										l=f:read("*l")
-										if(l~=nil) then
-											ret=ret.."\n"..l
-											string.gsub(l, "(%w+)", function(c) 
-												if(closers[c]) then unclosed=unclosed-1
-												elseif(openers[c]) then unclosed=unclosed+1
-												end
-											end)
-										end
-									end
-								end
-								f:close()
-							end
+							local src=getChunk(filename, source.linedefined)
+							if(nil~=src) then ret=src end
 						else
 							if(info.source~="=stdin") then
 								ret=string.gsub(tostring(info.source), "local func\nfunc=(.+) return func", function(c) return c end)
@@ -304,12 +326,12 @@ function initBuiltins()
 					end
 				end
 				unificationSetItem(world, y, ret)
-				return(builtins["equal/2"](world, y, ret))			
-			else
-				return NO
+				return(builtins["equal/2"](world, y, ret))	
 			end
+			return NO
 		end
 	end
+
 	if(paranoid) then 
 		builtins["setport/1"]=function(world, port) return NO end -- paranoid version
 	else
