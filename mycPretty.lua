@@ -6,7 +6,15 @@ end
 function serialize(args) -- serialize in Mycroft syntax
 	local ret, sep
 	if(type(args)~="table") then
-		ret=string.gsub(string.gsub(string.gsub(string.gsub(tostring(args), string.char(127), ","), string.char(126), "("), string.char(125), ")"), "([^ ]+)", function(q) if ("\\Y\\E\\S"==q) then return "YES" elseif("\\N\\O"==q) then return "NO" elseif("\\N\\C"==q) then return "NC" else return q end end)
+		ret=string.gsub(tostring(args), string.char(127), ",")
+		ret=string.gsub(ret, string.char(126), "(")
+		ret=string.gsub(ret, string.char(125), ")")
+		ret=string.gsub(ret, "([^ ]+)", function(q) 
+			if ("\\Y\\E\\S"==q) then return "YES" 
+			elseif("\\N\\O"==q) then return "NO" 
+			elseif("\\N\\C"==q) then return "NC" 
+			else return q end 
+		end)
 		return ret
 	end
 	if(args.truth~=nil and args.confidence~=nil) then
@@ -96,13 +104,16 @@ function strDef(world, k) -- return the definition of the predicate k as a strin
 		end
 		if(nil~=v.def.children) then
 			if(nil~=v.def.children[1]) then
-				ret=ret..pfx..serialize(args).." :- "..v.def.children[1].name..serialize(translateArgList(args, v.def.correspondences[1]))
+				ret=ret..pfx..serialize(args).." :- "
+				ret=ret..v.def.children[1].name
+				ret=ret..serialize(translateArgList(args, v.def.correspondences[1]))
 				if(nil==v.def.children[2]) then
 					sep=", "
 					if(v.def.op=="or") then
 						sep="; "
 					end
-					ret=ret..sep..v.def.children[2].name..serialize(translateArgList(args, v.def.correspondences[2]))
+					ret=ret..sep..v.def.children[2].name
+					ret=ret..serialize(translateArgList(args, v.def.correspondences[2]))
 				end
 				ret=ret..".\n"
 			end
