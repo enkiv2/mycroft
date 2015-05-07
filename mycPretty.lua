@@ -1,7 +1,8 @@
--- pretty-printing functions
+-- Pretty-printing functions
 function debugPrint(msg)
 	if(verbose) then print("debug: "..serialize(msg)) end
 end
+
 function serialize(args) -- serialize in Mycroft syntax
 	local ret, sep
 	if(type(args)~="table") then
@@ -61,7 +62,6 @@ function prettyPredID(p) -- serialize a predicate name, prolog-style
 end
 
 -- pretty-printing routines for predicate definition
-
 function printWorld(world) -- print all preds
 	print(strWorld(world))
 end

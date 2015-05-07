@@ -1,3 +1,4 @@
+-- Definitions and helper functions for special types in mycroft
 
 NC={truth=0, confidence=0}
 YES={truth=1, confidence=1}
@@ -56,6 +57,7 @@ function createPredID(pname, parity)
 	return {name=pname, arity=parity}
 end
 
+-- Helper functions for unification support
 function unificationGetItem(world, itemName)
 	if(nil==world.symbols) then world.symbols={} end
 	if(type(itemName) ~= "string") then 
