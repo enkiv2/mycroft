@@ -117,19 +117,46 @@ function parseTruth(x) -- handle the various representations of composite truth 
 	return tr
 end
 
+function escapeStrings(world, pargs)
+	local ret=string.gsub(pargs, "^%(", "")
+	ret=string.gsub(ret, "%)$", "")
+	ret=string.gsub(ret, "%b\"\"", 
+		function(c) 
+			local ret2=string.gsub(c, ",", string.char(127))
+			ret2=string.gsub(ret2,"%(", string.char(126))
+			ret2=string.gsub(ret2, "%)", string.char(125))
+			return string.gsub(ret2, "(%w+)", function(q) 
+				if("YES"==q) then 
+					return "\\Y\\E\\S" 
+				elseif("NO"==q) then 
+					return "\\N\\O" 
+				elseif("NC"==q) then 
+					return "\\N\\C" 
+				else 
+					return q 
+				end 
+			end) 
+		end )
+	ret=string.gsub(ret, "%b<>", function(c) return string.gsub(c, ",", string.char(127)) end )
+	return ret
+end
 function parseArgs(world, pargs) -- parse all sorts of lists
 	local args
 	if(nil==pargs) then return {} end
 	args={}
 	debugPrint(pargs)
 	pargs=string.gsub(
-			string.gsub(string.gsub(
-				string.gsub(string.gsub(
-					string.gsub(string.gsub(pargs, "^%(", ""), "%)$", ""), 
-				"%b\"\"", function(c)   return string.gsub(string.gsub(string.gsub(string.gsub(c, ",", string.char(127)),"%(", string.char(126)), "%)", string.char(125)), "(%w+)", function(q) if("YES"==q) then return "\\Y\\E\\S" elseif("NO"==q) then return "\\N\\O" elseif("NC"==q) then return "\\N\\C" else return q end end) end ), "%b<>", function(c) return string.gsub(c, ",", string.char(127)) end ),
-			" *(%w+) *(%b()) *", function(pname, pargs) debugPrint("embedded call: "..pname..pargs) local x=parsePredCall(world, pname, pargs) return serialize(executePredicatePA(world, x[1], x[2])) end), 
-			" *([^,]+) *", function (c) table.insert(args, parseItem(world, c)) end ), 
+			string.gsub(
+				string.gsub(escapeStrings(world, pargs)," *(%w+) *(%b()) *", function(pname, pargs) 
+					debugPrint("embedded call: "..pname..pargs) 
+					local x=parsePredCall(world, pname, pargs) 
+					return serialize(executePredicatePA(world, x[1], x[2])) 
+				end), 
+				" *([^,]+) *", function (c) 
+					table.insert(args, parseItem(world, c)) 
+			end ), 
 		string.char(127), ",")
+
 	for i,j in ipairs(args) do if(type(args)=="string") then args[i]=string.gsub(j, string.char(127), ",") end end
 	debugPrint("ARGS: "..serialize(args))
 	return args
