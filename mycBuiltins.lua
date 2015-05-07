@@ -236,7 +236,7 @@ function initBuiltins()
 			openers["if"]=true
 			openers["function"]=true
 		end
-		function getChunk(filename, linedefined)
+		function getChunk(filename, linedefined) -- Given a filename and a line number for the start of a lua function, return the complete function by counting chunk grouping symbols
 			local ret
 			debugPrint("source filename: "..filename)
 			debugPrint("source file line number: "..tostring(linedefined))
