@@ -89,7 +89,9 @@ helpText["nc/0"]=helpText["true/0"]
 builtins["set/2"]=function(world, x, y) unificationSetItem(world, x, unificationGetItem(world, y)) return builtins["equal/2"](world, x, y) end
 helpText["set/2"]="set(X, Y) forces unification of X with Y, if possible."
 builtins["print/1"]=function(world, c) print(serialize(c)) return YES end
-helpText["print/1"]=[[print(X) will print the value of X to stdout]]
+helpText["print/1"]=[[print(X) will print the value of X to stdout, followed by a newline]]
+builtins["puts/1"]=function(world,c) io.write(serialize(c)) return YES end
+helpText["puts/1"]=[[print(X) will print the value of X to stdout]]
 builtins["printWorld/0"]=function(world) printWorld(world) return YES end
 helpText["printWorld/0"]=[[printWorld() will print the definitions of all defined predicates]]
 builtins["printPred/1"]=function(world, p) if(nil==world[serialize(p)]) then return NO end print(strDef(world, serialize(p))) return YES end
@@ -247,10 +249,14 @@ if(not paranoid) then
 	end
 	helpText["setBuiltin/2"]="setBuiltin(Name,LuaSource) will set the builtin with the signature Name to the function defined by LuaSource. If LuaSource is not valid lua source code, NO will be returned, otherwise YES. Please note that the signature must be of the form name/arity, or else it will not be executable from mycroft!"
 	builtins["setBuiltin/2"]=function(world, x, y)
-		local compiled=loadstring(unificationGetItem(world, y))
+		local completeString="local func\nfunc="..serialize(unificationGetItem(world, y)).." return func"
+		local compiled,err=loadstring(completeString)
+		debugPrint(err)
 		local xname=unificationGetItem(world, x)
+		debugPrint("Trying to set builtin "..serialize(xname).." to lua code [["..completeString.."]]")
 		if(nil~=compiled) then
-			builtins[xname]=compiled
+			debugPrint("Set builtin "..serialize(xname).." to compiled lua code [["..completeString.."]]")
+			builtins[xname]=compiled()
 			return YES
 		end
 		return NO
@@ -306,7 +312,7 @@ if(not paranoid) then
 						end
 					else
 						if(info.source~="=stdin") then
-							ret=tostring(info.source)
+							ret=string.gsub(tostring(info.source), "local func\nfunc=(.+) return func", function(c) return c end)
 						end
 					end
 				end
@@ -574,7 +580,7 @@ end
 function serialize(args) -- serialize in Mycroft syntax
 	local ret, sep
 	if(type(args)~="table") then
-		ret=string.gsub(tostring(args), string.char(127), ",")
+		ret=string.gsub(string.gsub(string.gsub(string.gsub(tostring(args), string.char(127), ","), string.char(126), "("), string.char(125), ")"), "([^ ]+)", function(q) if ("\\Y\\E\\S"==q) then return "YES" elseif("\\N\\O"==q) then return "NO" elseif("\\N\\C"==q) then return "NC" else return q end end)
 		return ret
 	end
 	if(args.truth~=nil and args.confidence~=nil) then
@@ -700,6 +706,7 @@ function executePredicatePA(world, p, args) -- execute p with the given arglist
 	local ret, det, r, hash, ppid
 	hash=serialize(args)
 	ppid=prettyPredID(p)
+	debugPrint("Executing predicate: "..ppid..hash)
 	if(nil~=builtins[ppid]) then return builtins[ppid](world, unpack(args)) end
 	if(nil~=world) then
 		r=factExists(world, p, hash)
@@ -901,7 +908,7 @@ function parseArgs(world, pargs)
 			string.gsub(string.gsub(
 				string.gsub(string.gsub(
 					string.gsub(string.gsub(pargs, "^%(", ""), "%)$", ""), 
-				"%b\"\"", function(c)   return string.gsub(c, ",", string.char(127)) end ), "%b<>", function(c) return string.gsub(c, ",", string.char(127)) end ),
+				"%b\"\"", function(c)   return string.gsub(string.gsub(string.gsub(string.gsub(c, ",", string.char(127)),"%(", string.char(126)), "%)", string.char(125)), "(%w+)", function(q) if("YES"==q) then return "\\Y\\E\\S" elseif("NO"==q) then return "\\N\\O" elseif("NC"==q) then return "\\N\\C" else return q end end) end ), "%b<>", function(c) return string.gsub(c, ",", string.char(127)) end ),
 			" *(%w+) *(%b()) *", function(pname, pargs) debugPrint("embedded call: "..pname..pargs) local x=parsePredCall(world, pname, pargs) return serialize(executePredicatePA(world, x[1], x[2])) end), 
 			" *([^,]+) *", function (c) table.insert(args, parseItem(world, c)) end ), 
 		string.char(127), ",")
@@ -924,6 +931,7 @@ end
 
 function parsePredCall(world, pname, pargs)
 	local args
+	debugPrint("Predicate name: "..serialize(pname))
 	args=parseArgs(world, pargs)
 	return {createPredID(pname, #args), args}
 end
@@ -1293,6 +1301,9 @@ function testHelp()
 		print("help/1("..serialize(k)..") -> "..serialize(executePredicateNA({}, "help", {k})))
 	end
 end
+function testFile()
+	main({"test.myc"})
+end
 function test()
 	testSerialize()
 	testErr()
@@ -1301,6 +1312,7 @@ function test()
 	testBuiltins()
 	testParse()
 	testHelp()
+	testFile()
 end
 
 main(arg)
