@@ -349,6 +349,7 @@ builtins["banner/0"]=function(world) print(helpText["banner"]) return YES end
 helpText["welcome/0"]=helpText["banner"].."\nType help(). for help, and copying(). for copying information.\n"
 builtins["welcome/0"]=function(world) print(helpText["welcome/0"]) return YES end
 builtins["runtests/0"]=function(world) test() return YES end
+helpText["runtests/0"]="Run the test suite"
 builtins["addpeer/2"]=function(world, address, port) table.insert(mycnet.peers, {address, tonumber(port)}) return YES end
 if(paranoid) then 
 	builtins["setport/1"]=function(world, port) return NO end -- paranoid version

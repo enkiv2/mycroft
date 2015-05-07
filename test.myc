@@ -22,7 +22,7 @@
 ?- puts("YES => ")
 ?- add(1, 1, X), print(equal(X, 2)).
 ?- puts("getBuiltin(getBuiltin/2,X) => ")
-?- getBuiltin("getBuiltin/2", X),print(X).
+#?- getBuiltin("getBuiltin/2", X),print(X).
 ?- set(X, "function(world) return YES end"),setBuiltin("testSetBuiltin/0",X),getBuiltin("testSetBuiltin/0",Y),print(equal(X,Y)),puts(X),puts(" => "),print(Y).
 
 
