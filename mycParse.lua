@@ -99,14 +99,20 @@ end
 -- Interpreter semantics
 function parseTruth(x) -- handle the various representations of composite truth values
 	local tr
-	string.gsub(
-		string.gsub(
-			string.gsub(
-				string.gsub(x, " *< *(%d*%.?%d+) *[,"..string.char(127).."] *(%d*%.?%d+) *> *", function (t, c) tr={truth=tonumber(t), confidence=tonumber(c)} return "" end ),
-				" *< *(%d*%.?%d+) *| *", function(t) tr={truth=tonumber(t), confidence=1} return "" end),
-			" *| *(%d*%.?%d+) *> *", function(c) tr={truth=1, confidence=tonumber(t)} return "" end ),
-		" *(%w+) *", 
-		function (c)
+	string.gsub(string.gsub(string.gsub(string.gsub(x, 
+		" *< *(%d*%.?%d+) *[,"..string.char(127).."] *(%d*%.?%d+) *> *", function (t, c) 
+			tr={truth=tonumber(t), confidence=tonumber(c)} 
+			return "" 
+		end ),
+		" *< *(%d*%.?%d+) *| *", function(t) 
+			tr={truth=tonumber(t), confidence=1} 
+			return "" 
+		end),
+		" *| *(%d*%.?%d+) *> *", function(c) 
+			tr={truth=1, confidence=tonumber(t)} 
+			return "" 
+		end ),
+		" *(%w+) *", function (c)
 			if (c=="YES") then tr={truth=1, confidence=1} 
 			elseif (c=="NO") then tr={truth=0, confidence=1} 
 			elseif (c=="NC") then tr={truth=0, confidence=0} 
