@@ -1,4 +1,5 @@
-- Finish parser 
-- Internet layer (depends on parser, and ESP8266-specific code + luasocket alternative)
+- Finish parser (perhaps refactor interpreter-mode functions to support definition-mode with a flag?) 
+- Finish internet layer for NodeMCU and LuaJit FFI
 - Minimizer? (ESP8266 might not have much flash)
+- Refactor error reporting to take a pointer to the world/be world-specific (so that several separate worlds can share an interpreter and builtins without sharing errors)
 
