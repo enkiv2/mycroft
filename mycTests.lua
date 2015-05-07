@@ -22,6 +22,7 @@ function testErr()
 	print(MYCERR_STR)
 	MYCERR_STR=""
 	MYCERR=MYC_ERR_NOERR
+	print()
 end
 function testBool()
 	print("Testing booleans...")
@@ -137,6 +138,7 @@ end
 function testParse()
 	print("Testing parse...")
 	print(parseLine({}, "det true(x, y, z) :- YES."))
+	print()
 end
 function testHelp()
 	print("Testing online help...")
@@ -149,9 +151,11 @@ function testHelp()
 	for k,v in pairs(builtins) do
 		print("help/1("..serialize(k)..") -> "..serialize(executePredicateNA({}, "help", {k})))
 	end
+	print()
 end
 function testFile()
 	main({"test.myc"})
+	print()
 end
 function test()
 	testSerialize()
