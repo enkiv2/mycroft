@@ -239,6 +239,8 @@ if(not paranoid) then
 		openers["if"]=true
 		openers["function"]=true
 	end
+	helpText["interact/0"]=[[Go into interactive interpreter mode]]
+	builtins["interact/0"]=function(world) local x=mainLoop(world) while(x) do mainLoop(world) end return YES end
 	helpText["setParanoia/1"]=[[setParanoia(YES) will turn on paranoid mode]]
 	builtins["setParanoia/1"]=function(world, x) 
 		if(cmpTruth(unificationGetItem(world, x), YES)) then 
@@ -1132,15 +1134,16 @@ end
 function mainLoop(world)
 	io.write("?- ")
 	line=io.read("*l")
-	if(nil==line) then os.exit() end
+	if(nil==line) then return false end
 	if(nil==string.find(line, ":%-")) then line="?- "..line end
 	debugPrint("LINE: "..line)
 	print(serialize(parseLine(world, line)))
 	if(MYCERR~=MYC_ERR_NOERR) then
 		construct_traceback(MYCERR, "mainloop", {})
 		print(MYCERR_STR)
-		os.exit(1)
+		return false
 	end
+	return true
 end
 
 function main(argv)
@@ -1190,7 +1193,8 @@ function main(argv)
 	end
 	if(interactive) then
 		print(serialize(executePredicateNA(world, "welcome", {})))
-		while (true) do mainLoop(world) end
+		local x=mainLoop(world)
+		while (x) do x=mainLoop(world) end
 	end
 end
 
