@@ -1,6 +1,8 @@
 ?- YES, print(YES).
 ?- not(NO), print(YES).
+?- print(not(<0.7,1>)).
 ?- print("Hello, world!").
+?- concat("Hello, ", "world!", X), print(X).
 ?- print(not(NO)).
 ?- print(not(not(YES))).
 ?- print(equal(1,1)).
