@@ -1,0 +1,8 @@
+?- YES, print(YES).
+?- not(NO), print(YES).
+?- print("Hello, world!").
+?- print(not(NO)).
+?- print(not(not(YES))).
+?- print(equal(1,1)).
+?- print(equal(1,2)).
+

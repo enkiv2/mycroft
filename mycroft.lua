@@ -1,6 +1,7 @@
 #!/usr/bin/env lua
 
 paranoid=false
+verbose=false
 version=0.01
 banner=[[
    __  ___                  _____ 
@@ -191,32 +192,38 @@ helpText["addpeer/2"]="addpeer(Address,Port)\tadd a peer with the specified info
 
 mycnet={}
 function setupNetworkingNMCU()
+	debug("detected NodeMCU; setting up.")
 	setupNetworkingCommon()
 	setupNetworkingDummy() --XXX
 end
 function setupNetworkingLJIT()
+	debug("detected luajit; setting up.")
 	setupNetworkingCommon()
 	setupNetworkingDummy() --XXX
 end
 function setupNetworkingLSOCK()
+	debug("detected luasocket; setting up.")
 	setupNetworkingCommon()
 	socket=require("socket")
 	if(nil==socket) then
-		print("debug: luasocket failed to load; falling back to dummy")
+		debug("luasocket failed to load; falling back to dummy")
 		return setupNetworkingDummy()
 	end
 	mycnet.server=socket.bind("*", mycnet.port, mycnet.backlog)
 	if(nil==mycnet.server) then return setupNetworkingDummy() end
 	mycnet.server:settimeout(0.1, 't')
 	mycnet.forwardRequest=function(world, c) 
+		local firstPeer=mycnet.getCurrentPeer(world)
 		local peer=mycnet.getNextPeer(world)
 		if(nil==peer) then return nil end
 		local client=socket.connect(unpack(peer))
-		while(nil==client) do
+		while(nil==client and peer~=firstPeer) do
+			debug("attempting to send "..c.." to peer "..serialize(peer))
 			peer=mycnet.getNextPeer(world)
 			if(nil==peer) then return nil end
 			client=socket.connect(unpack(peer))
 		end
+		if(peer==firstPeer) then return nil end
 		client:send(c)
 		local ret=client:recieve()
 		return ret
@@ -227,16 +234,20 @@ function setupNetworkingLSOCK()
 		client:settimeout(10)
 		local line,err=client:recieve()
 		if(nil~=line) then
+			debug("got line [["..tostring(line).."]] from peer "..serialize(client:getpeername()))
 			if(string.find(line, '^ *%?%-')~=nil) then
+				debug("line is query; executing immediately")
 				client:send(serialize(parseLine(world, line)))
 			else
 				table.insert(mycnet.mailbox, {line, client:getpeername()})
+				debug("contents of mailbox: "..serialize(mycnet.mailbox))
 			end
 		end
 		client:close()
 	end -- get a list of requests from peers
 end
 function setupNetworkingCommon()
+	debug("setting up common networking features")
 	mycnet.port=1960 -- hardcode default for now
 	mycnet.backlog=512
 	mycnet.peers={}
@@ -261,6 +272,7 @@ function setupNetworkingCommon()
 		end
 	end -- process one step of somebody else's request
 	mycnet.forwardFact=function(world, l)
+		debug("forwarding fact [["..l.."]]")
 		if(mycnet.forwardedLines[l]) then return nil end
 		mycnet.forwardedLines[l]=true
 		local start=mycnet.getCurrentPeer(world)
@@ -271,8 +283,10 @@ function setupNetworkingCommon()
 		end
 		return nil
 	end
+	debug("listen port="..tostring(mycnet.port)..",backlog="..tostring(mycnet.backlog))
 end
 function setupNetworkingDummy()
+	debug("setting up dummy networking functions")
 	mycnet.getPeers=function() return {} end -- get a list of peers
 	mycnet.getCurrentPeer=function() return nil end 
 	mycnet.getNextPeer=function() return nil end -- round robin
@@ -381,6 +395,9 @@ function clearSymbolSpace(world)
 end
 
 -- pretty-printing functions
+function debug(msg)
+	if(verbose) then print("debug: "..serialize(msg)) end
+end
 function serialize(args) -- serialize in Mycroft syntax
 	local ret, sep
 	if(type(args)~="table") then
@@ -703,16 +720,19 @@ end
 
 function parseArgs(world, pargs)
 	local args
+	if(nil==pargs) then return {} end
 	args={}
+	debug(pargs)
 	pargs=string.gsub(
 			string.gsub(string.gsub(
-				string.gsub(
+				string.gsub(string.gsub(
 					string.gsub(string.gsub(pargs, "^%(", ""), "%)$", ""), 
-				"%b\"\"", function(c)   return string.gsub(c, ",", string.char(127)) end ), "%b<>", function(c) return string.gsub(c, ",", string.char(127)) end ), 
+				"%b\"\"", function(c)   return string.gsub(c, ",", string.char(127)) end ), "%b<>", function(c) return string.gsub(c, ",", string.char(127)) end ),
+			" *(%w+) *(%b()) *", function(pname, pargs) debug("embedded call: "..pname..pargs) local x=parsePredCall(world, pname, pargs) return serialize(executePredicatePA(world, x[1], x[2])) end), 
 			"([^,]+)", function (c) table.insert(args, parseItem(world, c)) end ), 
 		string.char(127), ",")
 	for i,j in ipairs(args) do if(type(args)=="string") then args[i]=string.gsub(j, string.char(127), ",") end end
-	--print("ARGS: "..serialize(args))
+	debug("ARGS: "..serialize(args))
 	return args
 end
 
@@ -730,7 +750,7 @@ end
 
 function parsePredCall(world, pname, pargs)
 	local args
-	args=parseargs(world, pargs)
+	args=parseArgs(world, pargs)
 	return {createPredID(pname, #args), args}
 end
 
@@ -856,6 +876,7 @@ end
 
 function parseLine(world, line)
 	clearSymbolSpace(world)
+	debug("LINE: "..tostring(line))
 	if(nil==line) then return line end
 	if(""==line) then return line end
 	if("#"==line[0]) then return "" end
@@ -887,10 +908,12 @@ function parseLine(world, line)
 end 
 
 function parseFile(world, file)
-	local line
+	local line, ret
 	line=file:read("*l")
 	while(nil~=line) do
-		parseLine(line)
+		ret=parseLine(world, line)
+		debug("=> "..serialize(ret))
+		line=file:read("*l")
 	end
 end
 
@@ -900,7 +923,7 @@ function mainLoop(world)
 	line=io.read("*l")
 	if(nil==line) then os.exit() end
 	if(nil==string.find(line, ":%-")) then line="?- "..line end
-	--print("LINE: "..line)
+	debug("LINE: "..line)
 	print(serialize(parseLine(world, line)))
 	if(MYCERR~=MYC_ERR_NOERR) then
 		construct_traceback(MYCERR, "mainloop", {})
@@ -913,20 +936,24 @@ function main(argv)
 	local world, interactive, i, arg, f
 	setupNetworking()
 	world={}
-	interactive=false
+	interactive=true
+	forceInteractive=false
 	if(#argv==0) then
 		interactive=true
 	else
 		for i,arg in ipairs(argv) do
 			if("-h"==arg or "-help"==arg or "--help"==arg or "-?"==arg) then
-				print("Usage:\n\tmycroft\nmycroft [-h|-?|--help|-help]\n\tmycroft [file1 file2...] [-i]\n\tmycroft -t")
-				print("Options:\n\t-h|-?|-help|--help\t\tPrint this help\n\t-i\t\t\tInteractive mode\n\t-t\t\t\tRun test suite")
+				print("Usage:\n\tmycroft\nmycroft [-h|-?|--help|-help]\n\tmycroft [file1 file2...] [-i] [-p] [-v]\n\tmycroft -t")
+				print("Options:\n\t-h|-?|-help|--help\t\tPrint this help\n\t-i\t\t\tInteractive mode\n\t-t\t\t\tRun test suite\n\t-p\t\t\tParanoid mode (disable some potentially insecure network-related features\n\t-v\t\t\tVerbose")
 			elseif("-t"==arg) then test() os.exit()
-			elseif("-i"==arg) then interactive=true
+			elseif("-p"==arg) then paranoid=true
+			elseif("-v"==arg) then verbose=true
+			elseif("-i"==arg) then interactive=true forceInteractive=true
 			else 
+				if(not forceInteractive) then interactive=false end
 				f, err=io.open(arg)
 				if(nil==f) then
-					print("Could not open file "..f.." for reading: "..tostring(err).."\nTry mycroft -h for help")
+					print("Could not open file "..arg.." for reading: "..tostring(err).."\nTry mycroft -h for help")
 					os.exit(1)
 				end
 				parseFile(world, f)
