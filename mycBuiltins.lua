@@ -239,7 +239,7 @@ function initBuiltins()
 		function getChunk(filename, linedefined)
 			local ret
 			debugPrint("source filename: "..filename)
-			debugPrint("source file line number: "..tostring(info.linedefined))
+			debugPrint("source file line number: "..tostring(linedefined))
 			local f=io.open(filename)
 			if(nil~=f and nil~=linedefined) then
 				local i, l, unclosed
@@ -316,7 +316,7 @@ function initBuiltins()
 					if(#info.source>0) then
 						if(string.find(info.source, '^%@')~=nil) then
 							local filename=string.gsub(info.source, '^%@(.+)$', function(c) return c end)
-							local src=getChunk(filename, source.linedefined)
+							local src=getChunk(filename, info.linedefined)
 							if(nil~=src) then ret=src end
 						else
 							if(info.source~="=stdin") then
