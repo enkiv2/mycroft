@@ -458,11 +458,8 @@ function setupNetworkingDummy()
 	debugPrint("setting up dummy networking functions")
 	mycnet.getPeers=function() return {} end -- get a list of peers
 	mycnet.getCurrentPeer=function() return nil end 
-	mycnet.getNextPeer=function() return nil end -- round robin
 	mycnet.forwardRequest=function(c) return nil end -- send a line of code to next peer
-	mycnet.forwardFact=function(c) return nil end -- send a line of code to next peer
 	mycnet.checkMailbox=function() return {} end -- get a list of requests from peers
-	mycnet.yield=function() return nil end -- process one step of somebody else's request
 end
 function setupNetworking()
 	if(nil~=node) then
