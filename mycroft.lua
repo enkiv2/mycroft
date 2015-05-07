@@ -157,6 +157,77 @@ builtins["not/1"]=function(world, a)
 	return canonicalizeCTV(ret)
 end
 helpText["not/1"]="Invert the truth component of a truth value"
+builtins["add/3"]=function(world, a, b, r) 
+	a=unificationGetItem(world, a)
+	b=unificationGetItem(world, b)
+	a=tonumber(a)
+	b=tonumber(b)
+	if(nil==a or nil==b) then return NO end
+	unificationSetItem(world, r, a+b)
+	return builtins["equal/2"](world, r, a+b)
+end
+builtins["sub/3"]=function(world, a, b, r) 
+	a=unificationGetItem(world, a)
+	b=unificationGetItem(world, b)
+	a=tonumber(a)
+	b=tonumber(b)
+	if(nil==a or nil==b) then return NO end
+	unificationSetItem(world, r, a-b)
+	return builtins["equal/2"](world, r, a-b)
+end
+builtins["mul/3"]=function(world, a, b, r) 
+	a=unificationGetItem(world, a)
+	b=unificationGetItem(world, b)
+	a=tonumber(a)
+	b=tonumber(b)
+	if(nil==a or nil==b) then return NO end
+	unificationSetItem(world, r, a*b)
+	return builtins["equal/2"](world, r, a*b)
+end
+builtins["div/3"]=function(world, a, b, r) 
+	a=unificationGetItem(world, a)
+	b=unificationGetItem(world, b)
+	a=tonumber(a)
+	b=tonumber(b)
+	if(nil==a or nil==b) then return NO end
+	unificationSetItem(world, r, a/b)
+	return builtins["equal/2"](world, r, a/b)
+end
+builtins["concat/3"]=function(world, a, b, r) 
+	a=unificationGetItem(world, a)
+	b=unificationGetItem(world, b)
+	a=serialize(a)
+	b=serialize(b)
+	if(nil==a or nil==b) then return NO end
+	unificationSetItem(world, r, a..b)
+	return builtins["equal/2"](world, r, a..b)
+end
+builtins["append/3"]=function(world, a, b, r) 
+	a=unificationGetItem(world, a)
+	b=unificationGetItem(world, b)
+	local ret
+	if(type(a)~="table") then 
+		ret={a}
+	else
+		local i,j
+		ret={}
+		for i,j in ipairs(a) do
+			ret[i]=j
+		end
+		for i,j in pairs(a) do
+			ret[i]=j
+		end
+	end
+	table.append(ret, b)
+	unificationSetItem(world, r, ret)
+	return builtins["equal/2"](world, r, ret)
+end
+helpText["add/3"]=[[add(A,B,X), sub(A,B,X), mul(A,B,X),div(A,B,X)\tSet X=A+B, A-B, A*B, or A/B, respectively]]
+helpText["sub/3"]=helpText["add/3"]
+helpText["mul/3"]=helpText["add/3"]
+helpText["div/3"]=helpText["add/3"]
+helpText["concat/3"]="concat(A,B,X)\tSet X to the string concatenation of A and B"
+helpText["append/3"]="append(A,B,X)\tSet X to a list consisting of the item B appended to the end of the list A. If A is not a list, set X to a list consisting of items A and B."
 builtins["builtins/0"]=function(world) for k,v in pairs(builtins) do print(tostring(k)) end return YES end
 helpText["builtins/0"]="builtins/0\tprint all built-in predicates"
 builtins["help/0"]=function(world) print(help) return YES end
@@ -365,13 +436,24 @@ end
 
 function unificationGetItem(world, itemName)
 	if(nil==world.symbols) then world.symbols={} end
-	if(type(itemName) ~= "string") then return itemName end
+	if(type(itemName) ~= "string") then 
+		debug(serialize(itemName).."=\""..serialize(itemName).."\"")
+		return itemName 
+	end
 	if(#itemName>0) then
 		if(string.find(itemName, '^%u')~=nil) then
-			if(world.symbols[itemName]==nil) then return itemName end
+			if(world.symbols[itemName]==nil) then 
+				debug(serialize(itemName).."=\""..serialize(itemName).."\"")
+				return itemName 
+			end
+			debug(serialize(itemName).."=\""..serialize(world.symbols[itemName]).."\"")
 			return world.symbols[itemName]
-		else return itemName end
+		else 
+			debug(serialize(itemName).."=\""..serialize(itemName).."\"")
+			return itemName 
+		end
 	end
+	debug(serialize(itemName).."=\""..serialize(itemName).."\"")
 	return itemName
 end
 function unificationSetItem(world, itemName, value)
@@ -381,6 +463,7 @@ function unificationSetItem(world, itemName, value)
 		if(string.find(itemName, '^%u')~=nil) then
 			if(world.symbols[itemName]==nil) then
 				world.symbols[itemName]=value
+				debug(serialize(itemName)..":=\""..serialize(world.symbols[itemName]).."\"")
 				return value
 			elseif(world.symbols[itemName]~=value) then
 				throw(MYC_ERR_UNIF, "set/2", {itemName, value}, "\tCurrent value of "..serialize(itemName).." is "..serialize(world.symbols[itemName]))
@@ -729,7 +812,7 @@ function parseArgs(world, pargs)
 					string.gsub(string.gsub(pargs, "^%(", ""), "%)$", ""), 
 				"%b\"\"", function(c)   return string.gsub(c, ",", string.char(127)) end ), "%b<>", function(c) return string.gsub(c, ",", string.char(127)) end ),
 			" *(%w+) *(%b()) *", function(pname, pargs) debug("embedded call: "..pname..pargs) local x=parsePredCall(world, pname, pargs) return serialize(executePredicatePA(world, x[1], x[2])) end), 
-			"([^,]+)", function (c) table.insert(args, parseItem(world, c)) end ), 
+			" *([^,]+) *", function (c) table.insert(args, parseItem(world, c)) end ), 
 		string.char(127), ",")
 	for i,j in ipairs(args) do if(type(args)=="string") then args[i]=string.gsub(j, string.char(127), ",") end end
 	debug("ARGS: "..serialize(args))

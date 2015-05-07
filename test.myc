@@ -5,4 +5,6 @@
 ?- print(not(not(YES))).
 ?- print(equal(1,1)).
 ?- print(equal(1,2)).
+?- set(X, "hello"), print(X).
+?- add(1, 1, X), print(equal(X, 2)).
 
