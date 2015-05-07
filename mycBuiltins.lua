@@ -7,6 +7,16 @@ banner=[[
 /_/  /_/\_, /\__/_/  \___/_/ \__/   Language
        /___/  v. ]]..tostring(version).."\n"
 
+colors={black=0, red=1, green=2, yellow=3, blue=4, magenta=5, cyan=6, white=7, none=0}
+function colorCode(bg, fg) if(bg==nil) then return string.char(27).."[0m" end return string.char(27).."["..tostring(30+colors[fg])..";"..tostring(40+colors[bg]).."m" end
+ansibanner=(
+colorCode("black", "red")..
+[[   __  ___                  _____            ]]..colorCode().."\n"..colorCode("black", "red")..
+[[  /  |/  /_ _____________  / _/ /_ ]]..colorCode("black", "white").."Composite "..colorCode().."\n"..colorCode("black", "yellow")..
+[[ / /|_/ / // / __/ __/ _ \/ _/ __/]]..colorCode("black", "white").."     Logic "..colorCode().."\n"..colorCode("black", "green")..
+[[/_/  /_/\_, /\__/_/  \___/_/ \__/]]..colorCode("black", "white").."   Language "..colorCode().."\n"..colorCode("black", "cyan")..
+[[       /___/  v. ]]..tostring(version)..string.rep(" ", 44-16-#tostring(version))..colorCode().."\n")
+
 copying=[[Mycroft (c) 2015, John Ohno.
 All rights reserved.
 
@@ -358,9 +368,10 @@ return YES end
 builtins["copying/0"]=function(world) print(builtins["copying"]) end
 helpText["copying/0"]=helpText["copying"]
 helpText["banner"]=banner
+helpText["ansibanner"]=ansibanner
 helpText["banner/0"]=helpText["banner"]
 builtins["banner/0"]=function(world) print(helpText["banner"]) return YES end
-helpText["welcome/0"]=helpText["banner"].."\nType help(). for help, and copying(). for copying information.\n"
+helpText["welcome/0"]=helpText["ansibanner"].."\nType help(). for help, and copying(). for copying information.\n"
 builtins["welcome/0"]=function(world) print(helpText["welcome/0"]) return YES end
 builtins["runtests/0"]=function(world) test() return YES end
 helpText["runtests/0"]="Run the test suite"
