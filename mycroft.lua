@@ -4,6 +4,22 @@ paranoid=false
 verbose=false
 version=0.01
 
+usage="Mycroft v"..tostring(version)..[[
+
+Usage:
+	mycroft
+	mycroft [-h|-?|--help|-help]
+	mycroft [file1 file2...] [[-e statement ] [-e statement2]...] [-i] [-p] [-v]
+	mycroft -t
+
+Options:
+	-h|-?|-help|--help		Print this help
+	-i				Interactive mode
+	-t				Run test suite
+	-p				Paranoid mode (disable some potentially insecure network-related features
+	-v				Verbose
+	-e statement			Execute statement
+]]
 
 function main(argv)
 	local world, interactive, forceInteractive, testMode, i, arg, f, files, strs
@@ -22,8 +38,8 @@ function main(argv)
 				table.insert(strs, arg)
 				nextStr=false
 			elseif("-h"==arg or "-help"==arg or "--help"==arg or "-?"==arg) then
-				print("Usage:\n\tmycroft\nmycroft [-h|-?|--help|-help]\n\tmycroft [file1 file2...] [[-e statement ] [-e statement2]...] [-i] [-p] [-v]\n\tmycroft -t")
-				print("Options:\n\t-h|-?|-help|--help\t\tPrint this help\n\t-i\t\t\tInteractive mode\n\t-t\t\t\tRun test suite\n\t-p\t\t\tParanoid mode (disable some potentially insecure network-related features\n\t-v\t\t\tVerbose\n\t-e statement\t\tExecute statement")
+				print(usage)
+				os.exit(0)
 			elseif("-t"==arg) then testMode=true if(not forceInteractive) then interactive=false end
 			elseif("-p"==arg) then paranoid=true
 			elseif("-v"==arg) then verbose=true
