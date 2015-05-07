@@ -7,4 +7,4 @@
 ?- print(equal(1,2)).
 ?- set(X, "hello"), print(X).
 ?- add(1, 1, X), print(equal(X, 2)).
-
+?- getBuiltin("getBuiltin/2", X),print(X).

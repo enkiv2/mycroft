@@ -228,6 +228,96 @@ helpText["mul/3"]=helpText["add/3"]
 helpText["div/3"]=helpText["add/3"]
 helpText["concat/3"]="concat(A,B,X)\tSet X to the string concatenation of A and B"
 helpText["append/3"]="append(A,B,X)\tSet X to a list consisting of the item B appended to the end of the list A. If A is not a list, set X to a list consisting of items A and B."
+if(not paranoid) then
+	function constructOpeners() -- for handling chunking of multiline code. Not reliable!
+		closers={}
+		closers["end"]=true
+		openers={}
+		openers["do"]=true
+		openers["if"]=true
+		openers["function"]=true
+	end
+	helpText["setParanoia/1"]=[[setParanoia(YES) will turn on paranoid mode]]
+	builtins["setParanoia/1"]=function(world, x) 
+		if(cmpTruth(unificationGetItem(world, x), YES)) then 
+			paranoia=true 
+			return YES 
+		end 
+		return NO 
+	end
+	helpText["setBuiltin/2"]="setBuiltin(Name,LuaSource) will set the builtin with the signature Name to the function defined by LuaSource. If LuaSource is not valid lua source code, NO will be returned, otherwise YES. Please note that the signature must be of the form name/arity, or else it will not be executable from mycroft!"
+	builtins["setBuiltin/2"]=function(world, x, y)
+		local compiled=loadstring(unificationGetItem(world, y))
+		local xname=unificationGetItem(world, x)
+		if(nil~=compiled) then
+			builtins[xname]=compiled
+			return YES
+		end
+		return NO
+	end
+	helpText["getBuiltin/2"]="getBuiltin(Name, X) will set X to the string containing the Lua source code of the builtin whose signature is Name, if possible, otherwise representing it as a Lua function identifier"
+	builtins["getBuiltin/2"]=function(world, x, y) 
+		local info, xname, ret
+		xname=serialize(unificationGetItem(world, x))
+		if(nil~=builtins[xname]) then 
+			info=debug.getinfo(builtins[xname], 'Sf')
+			if(nil==info) then return NO end
+			ret=tostring(info.func)
+			debugPrint("source: "..tostring(info.source))
+			if("Lua"==info.what) then 
+				if(#info.source>0) then
+					if(string.find(info.source, '^%@')~=nil) then
+						local filename=string.gsub(info.source, '^%@(.+)$', function(c) return c end)
+						debugPrint("source filename: "..filename)
+						debugPrint("source file line number: "..tostring(info.linedefined))
+						local f=io.open(filename)
+						if(nil~=f and nil~=info.linedefined) then
+							local i, l, unclosed
+							i=1
+							l=f:read("*l")
+							while(i<info.linedefined and l~=nil) do
+								i=i+1
+								l=f:read("*l")
+							end
+							if(i==info.linedefined) then
+								if(openers==nil) then
+									constructOpeners()
+								end
+								ret=string.gsub(tostring(l), "builtins.+= *(function *.+)$", function(c) return c end)
+								unclosed=0
+								string.gsub(ret, "(%w+)", function(c) 
+									if(closers[c]) then unclosed=unclosed-1
+									elseif(openers[c]) then unclosed=unclosed+1
+									end
+								end)
+								while (unclosed>0 and l~=nil) do
+									l=f:read("*l")
+									if(l~=nil) then
+										ret=ret.."\n"..l
+										string.gsub(l, "(%w+)", function(c) 
+											if(closers[c]) then unclosed=unclosed-1
+											elseif(openers[c]) then unclosed=unclosed+1
+											end
+										end)
+									end
+								end
+							end
+							f:close()
+						end
+					else
+						if(info.source~="=stdin") then
+							ret=tostring(info.source)
+						end
+					end
+				end
+			end
+			unificationSetItem(world, y, ret)
+			return(builtins["equal/2"](world, y, ret))			
+		else
+			return NO
+		end
+	end
+end
 builtins["builtins/0"]=function(world) for k,v in pairs(builtins) do print(tostring(k)) end return YES end
 helpText["builtins/0"]="builtins/0\tprint all built-in predicates"
 builtins["help/0"]=function(world) print(help) return YES end
@@ -263,21 +353,21 @@ helpText["addpeer/2"]="addpeer(Address,Port)\tadd a peer with the specified info
 
 mycnet={}
 function setupNetworkingNMCU()
-	debug("detected NodeMCU; setting up.")
+	debugPrint("detected NodeMCU; setting up.")
 	setupNetworkingCommon()
 	setupNetworkingDummy() --XXX
 end
 function setupNetworkingLJIT()
-	debug("detected luajit; setting up.")
+	debugPrint("detected luajit; setting up.")
 	setupNetworkingCommon()
 	setupNetworkingDummy() --XXX
 end
 function setupNetworkingLSOCK()
-	debug("detected luasocket; setting up.")
+	debugPrint("detected luasocket; setting up.")
 	setupNetworkingCommon()
 	socket=require("socket")
 	if(nil==socket) then
-		debug("luasocket failed to load; falling back to dummy")
+		debugPrint("luasocket failed to load; falling back to dummy")
 		return setupNetworkingDummy()
 	end
 	mycnet.server=socket.bind("*", mycnet.port, mycnet.backlog)
@@ -289,7 +379,7 @@ function setupNetworkingLSOCK()
 		if(nil==peer) then return nil end
 		local client=socket.connect(unpack(peer))
 		while(nil==client and peer~=firstPeer) do
-			debug("attempting to send "..c.." to peer "..serialize(peer))
+			debugPrint("attempting to send "..c.." to peer "..serialize(peer))
 			peer=mycnet.getNextPeer(world)
 			if(nil==peer) then return nil end
 			client=socket.connect(unpack(peer))
@@ -305,20 +395,20 @@ function setupNetworkingLSOCK()
 		client:settimeout(10)
 		local line,err=client:recieve()
 		if(nil~=line) then
-			debug("got line [["..tostring(line).."]] from peer "..serialize(client:getpeername()))
+			debugPrint("got line [["..tostring(line).."]] from peer "..serialize(client:getpeername()))
 			if(string.find(line, '^ *%?%-')~=nil) then
-				debug("line is query; executing immediately")
+				debugPrint("line is query; executing immediately")
 				client:send(serialize(parseLine(world, line)))
 			else
 				table.insert(mycnet.mailbox, {line, client:getpeername()})
-				debug("contents of mailbox: "..serialize(mycnet.mailbox))
+				debugPrint("contents of mailbox: "..serialize(mycnet.mailbox))
 			end
 		end
 		client:close()
 	end -- get a list of requests from peers
 end
 function setupNetworkingCommon()
-	debug("setting up common networking features")
+	debugPrint("setting up common networking features")
 	mycnet.port=1960 -- hardcode default for now
 	mycnet.backlog=512
 	mycnet.peers={}
@@ -343,7 +433,7 @@ function setupNetworkingCommon()
 		end
 	end -- process one step of somebody else's request
 	mycnet.forwardFact=function(world, l)
-		debug("forwarding fact [["..l.."]]")
+		debugPrint("forwarding fact [["..l.."]]")
 		if(mycnet.forwardedLines[l]) then return nil end
 		mycnet.forwardedLines[l]=true
 		local start=mycnet.getCurrentPeer(world)
@@ -354,10 +444,10 @@ function setupNetworkingCommon()
 		end
 		return nil
 	end
-	debug("listen port="..tostring(mycnet.port)..",backlog="..tostring(mycnet.backlog))
+	debugPrint("listen port="..tostring(mycnet.port)..",backlog="..tostring(mycnet.backlog))
 end
 function setupNetworkingDummy()
-	debug("setting up dummy networking functions")
+	debugPrint("setting up dummy networking functions")
 	mycnet.getPeers=function() return {} end -- get a list of peers
 	mycnet.getCurrentPeer=function() return nil end 
 	mycnet.getNextPeer=function() return nil end -- round robin
@@ -437,23 +527,23 @@ end
 function unificationGetItem(world, itemName)
 	if(nil==world.symbols) then world.symbols={} end
 	if(type(itemName) ~= "string") then 
-		debug(serialize(itemName).."=\""..serialize(itemName).."\"")
+		debugPrint(serialize(itemName).."=\""..serialize(itemName).."\"")
 		return itemName 
 	end
 	if(#itemName>0) then
 		if(string.find(itemName, '^%u')~=nil) then
 			if(world.symbols[itemName]==nil) then 
-				debug(serialize(itemName).."=\""..serialize(itemName).."\"")
+				debugPrint(serialize(itemName).."=\""..serialize(itemName).."\"")
 				return itemName 
 			end
-			debug(serialize(itemName).."=\""..serialize(world.symbols[itemName]).."\"")
+			debugPrint(serialize(itemName).."=\""..serialize(world.symbols[itemName]).."\"")
 			return world.symbols[itemName]
 		else 
-			debug(serialize(itemName).."=\""..serialize(itemName).."\"")
+			debugPrint(serialize(itemName).."=\""..serialize(itemName).."\"")
 			return itemName 
 		end
 	end
-	debug(serialize(itemName).."=\""..serialize(itemName).."\"")
+	debugPrint(serialize(itemName).."=\""..serialize(itemName).."\"")
 	return itemName
 end
 function unificationSetItem(world, itemName, value)
@@ -463,7 +553,7 @@ function unificationSetItem(world, itemName, value)
 		if(string.find(itemName, '^%u')~=nil) then
 			if(world.symbols[itemName]==nil) then
 				world.symbols[itemName]=value
-				debug(serialize(itemName)..":=\""..serialize(world.symbols[itemName]).."\"")
+				debugPrint(serialize(itemName)..":=\""..serialize(world.symbols[itemName]).."\"")
 				return value
 			elseif(world.symbols[itemName]~=value) then
 				throw(MYC_ERR_UNIF, "set/2", {itemName, value}, "\tCurrent value of "..serialize(itemName).." is "..serialize(world.symbols[itemName]))
@@ -478,13 +568,14 @@ function clearSymbolSpace(world)
 end
 
 -- pretty-printing functions
-function debug(msg)
+function debugPrint(msg)
 	if(verbose) then print("debug: "..serialize(msg)) end
 end
 function serialize(args) -- serialize in Mycroft syntax
 	local ret, sep
 	if(type(args)~="table") then
-		return tostring(args)
+		ret=string.gsub(tostring(args), string.char(127), ",")
+		return ret
 	end
 	if(args.truth~=nil and args.confidence~=nil) then
 		if(1==args.confidence) then
@@ -805,17 +896,17 @@ function parseArgs(world, pargs)
 	local args
 	if(nil==pargs) then return {} end
 	args={}
-	debug(pargs)
+	debugPrint(pargs)
 	pargs=string.gsub(
 			string.gsub(string.gsub(
 				string.gsub(string.gsub(
 					string.gsub(string.gsub(pargs, "^%(", ""), "%)$", ""), 
 				"%b\"\"", function(c)   return string.gsub(c, ",", string.char(127)) end ), "%b<>", function(c) return string.gsub(c, ",", string.char(127)) end ),
-			" *(%w+) *(%b()) *", function(pname, pargs) debug("embedded call: "..pname..pargs) local x=parsePredCall(world, pname, pargs) return serialize(executePredicatePA(world, x[1], x[2])) end), 
+			" *(%w+) *(%b()) *", function(pname, pargs) debugPrint("embedded call: "..pname..pargs) local x=parsePredCall(world, pname, pargs) return serialize(executePredicatePA(world, x[1], x[2])) end), 
 			" *([^,]+) *", function (c) table.insert(args, parseItem(world, c)) end ), 
 		string.char(127), ",")
 	for i,j in ipairs(args) do if(type(args)=="string") then args[i]=string.gsub(j, string.char(127), ",") end end
-	debug("ARGS: "..serialize(args))
+	debugPrint("ARGS: "..serialize(args))
 	return args
 end
 
@@ -959,7 +1050,7 @@ end
 
 function parseLine(world, line)
 	clearSymbolSpace(world)
-	debug("LINE: "..tostring(line))
+	debugPrint("LINE: "..tostring(line))
 	if(nil==line) then return line end
 	if(""==line) then return line end
 	if("#"==line[0]) then return "" end
@@ -995,7 +1086,7 @@ function parseFile(world, file)
 	line=file:read("*l")
 	while(nil~=line) do
 		ret=parseLine(world, line)
-		debug("=> "..serialize(ret))
+		debugPrint("=> "..serialize(ret))
 		line=file:read("*l")
 	end
 end
@@ -1006,7 +1097,7 @@ function mainLoop(world)
 	line=io.read("*l")
 	if(nil==line) then os.exit() end
 	if(nil==string.find(line, ":%-")) then line="?- "..line end
-	debug("LINE: "..line)
+	debugPrint("LINE: "..line)
 	print(serialize(parseLine(world, line)))
 	if(MYCERR~=MYC_ERR_NOERR) then
 		construct_traceback(MYCERR, "mainloop", {})
