@@ -45,7 +45,11 @@ function serialize(args) -- serialize in Mycroft syntax
 		if(type(v)=="table") then
 			ret=ret..serialize(v)
 		elseif(type(v)=="string") then
-			ret=ret.."\""..v.."\""
+			if(string.find(v, "[^A-Za-z0-9]")==nil) then
+				ret=ret..v
+			else
+				ret=ret.."\""..v.."\""
+			end
 		else
 			ret=ret..tostring(v)
 		end
@@ -105,15 +109,21 @@ function strDef(world, k) -- return the definition of the predicate k as a strin
 	if(nil~=v.def) then
 		argCount=0
 		args={}
-		for i=1,v.arity do
-			args[i]="Arg"..tostring(i)
+		if(v.arity<26) then
+			for i=1,v.arity do
+				args[i]=string.char(64+i)
+			end
+		else
+			for i=1,v.arity do
+				args[i]="Arg"..tostring(i)
+			end
 		end
 		if(nil~=v.def.children) then
 			if(nil~=v.def.children[1]) then
 				ret=ret..pfx..serialize(args).." :- "
 				ret=ret..v.def.children[1].name
 				ret=ret..serialize(translateArgList(args, v.def.correspondences[1]))
-				if(nil~=v.def.children[2]) then
+				if(nil~=v.def.children[2])  then
 					sep=", "
 					if(v.def.op=="or") then
 						sep="; "
@@ -139,27 +149,41 @@ function colorCode(bg, fg, bold)
 end
 function pretty(msg)
 	if(ansi) then
-		msg=string.gsub(string.gsub(string.gsub(string.gsub(string.gsub(string.gsub(string.gsub(string.gsub(string.gsub(msg, 
+		msg=string.gsub(string.gsub(string.gsub(string.gsub(string.gsub(string.gsub(string.gsub(string.gsub(string.gsub(string.gsub(msg, 
 			"(;)", function (c)
 				return colorCode("black", "magenta", 1)..c..colorCode("black", "white")
-			end), "(%w+)", function(c)
-				if("YES"==c or "NO"==c or "NC"==c) then
-					return colorCode("black", "yellow", 1)..c..colorCode("black", "white")
-				else 
-					return c
-				end
-			end),"(%w+ *%b())", function (c)
+			end), "([.,])", function (c)
+				return colorCode("black", "magenta", 1)..c..colorCode("black", "white")
+			end),"([a-z_]%w+ *%b())", function (c)
 				return colorCode("black", "cyan", 1)..c..colorCode("black", "white")
 			end), "([()])", function (c)
 				return colorCode("black", "magenta", 1)..c..colorCode("black", "white")
+			end), "([ \t\n]*)(%w+)", function(b, c)
+				if("YES"==c or "NO"==c or "NC"==c) then
+					return b..colorCode("black", "yellow", 1)..c..colorCode("black", "white")
+				elseif("debug"==c or "error"==c) then
+					return b..colorCode("black", "red", 1)..c..colorCode("black", "white")
+				elseif(string.find(c, "^%u%w*$")~=nil) then
+					return b..colorCode("black", "cyan")..c..colorCode("black", "white")
+				else 
+					return b..c
+				end
+			end), "(40m)(%w+)", function(b, c)
+				if("YES"==c or "NO"==c or "NC"==c) then
+					return b..colorCode("black", "yellow", 1)..c..colorCode("black", "white")
+				elseif("debug"==c or "error"==c) then
+					return b..colorCode("black", "red", 1)..c..colorCode("black", "white")
+				elseif(string.find(c, "^%u%w*$")~=nil) then
+					return b..colorCode("black", "cyan")..c..colorCode("black", "white")
+				else 
+					return b..c
+				end
 			end), "([?:]%-)", function (c) 
 				return colorCode("black", "green", 1)..c..colorCode("black", "white") 
 			end), "([<|][0-9., ]+[|>])", function(c) 
 				return colorCode("black", "yellow", 1)..c..colorCode("black", "white") 
 			end), "%b\"\"", function(c)
 				return colorCode("black", "red")..string.gsub(c, string.char(27).."%[".."[^m]+m", "")..colorCode("black", "white")
-			end), "([.,])", function (c)
-				return colorCode("black", "magenta", 1)..c..colorCode("black", "white")
 			end), "(#[^\n]*)", function(c)
 				return colorCode("black", "blue", 1)..string.gsub(c, string.char(27).."%[".."[^m]+m", "")..colorCode("black", "white")
 			end)

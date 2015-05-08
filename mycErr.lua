@@ -7,6 +7,7 @@ MYC_ERR_UNDEFWORLD=2
 MYC_ERR_USER=3
 
 function construct_traceback(p, hash) -- add a line to the traceback
+	local ppid, pname
 	if(type(p)=="table") then
 		ppid=prettyPredID(p)
 		pname=p.name
@@ -30,6 +31,7 @@ end
 
 function throw(code, pred, hash, msg) -- throw an error, with a position in the code as pred(hash) and an error message
 	MYCERR=code
-	construct_traceback(serialize(pred), serialize(hash)..serialize(msg))
-	print(MYCERR_STR)
+	if(tonumber(code)) then MYCERR=tonumber(code) end
+	construct_traceback(serialize(pred), serialize(hash)..": "..serialize(msg))
+	print(pretty(MYCERR_STR))
 end

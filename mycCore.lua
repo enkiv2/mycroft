@@ -195,7 +195,7 @@ function mainLoop(world)
 	print(pretty(serialize(parseLine(world, line))))
 	if(MYCERR~=MYC_ERR_NOERR) then
 		construct_traceback(MYCERR, "mainloop", {})
-		print(MYCERR_STR)
+		print(pretty(MYCERR_STR))
 		return false
 	end
 	return true

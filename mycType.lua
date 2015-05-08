@@ -13,20 +13,26 @@ function translateArgList(list, conv, literals) -- given an arglist and a conver
 	if(conv[2]==nil) then return l end
 	if(conv[3]==nil) then conv[3]={} end
 	for i,j in ipairs(conv[1]) do
-		if(conv[2][i]) then l[conv[2][i]]=list[conv[1][i]] end
-		if(conv[3][i]) then l[conv[2][i]]=conv[3][i] end
-		if(literals[i]) then l[i]=literals[i] end
+		if(i and j) then
+			if(conv[2][i]) then l[conv[2][i]]=list[conv[1][i]] end
+			if(literals[i]) then l[i]=literals[i] end
+		end
 	end
 	for i,j in ipairs(conv[2]) do
-		if(conv[1][i]) then l[conv[2][i]]=list[conv[1][i]] end
-		if(conv[3][i]) then l[conv[2][i]]=conv[3][i] end
-		if(literals[i]) then l[i]=literals[i] end
+		if(i and j) then
+			if(conv[1][i]) then l[conv[2][i]]=list[conv[1][i]] end
+			if(conv[3][i]) then l[conv[2][i]]=conv[3][i] end
+			if(literals[i]) then l[i]=literals[i] end
+		end
 	end
 	for i,j in ipairs(conv[3]) do
 		l[i]=conv[3][i]
 	end
 	for i,j in ipairs(literals) do
 		l[i]=literals[i]
+	end
+	for i,j in ipairs(l) do
+		if(i>#conv[2]) then l[i]=nil end
 	end
 	debugPrint({"translation of", list, "by", conv, "is", l})
 	return l

@@ -30,15 +30,27 @@ end
 function genCorrespondences(x, y) -- given a pair of arg lists, produce correspondences between them
 	local ret, i, j, k, l
 	ret={{}, {}, {}}
+	local max=#x
+	if(#y>max) then max=#y end
+	for i=1,max do
+		if(i<=#x) then ret[1][i]=i end
+		if(i<=#y) then ret[2][i]=i end
+		ret[3][i]=nil
+	end
 	for i,j in ipairs(y) do
 		local matched=false
 		for k,l in ipairs(x) do
 			if(j==l) then 
 				matched=true
-				ret[2][i]=k 
-				if(not ret[1][k]) then 
-					ret[1][k]=i 
-				end 
+				debugPrint({"x[",i,"]=",j,"<==>",l,"=y[",k,"]"})
+				debugPrint({"ret[1][",i,"]=",k})
+				debugPrint({"ret[2][",k,"]=",i})
+				if(k<=#y) then ret[1][i]=k end
+				if(i<=#x) then ret[2][k]=i end
+				debugPrint({"ret", ret}) 
+				debugPrint({"ret[1]", ret[1]}) 
+				debugPrint({"ret[2]", ret[2]}) 
+				debugPrint({"ret[3]", ret[3]}) 
 			end
 		end
 		if(not matched) then
@@ -89,7 +101,7 @@ function parseBodyComponents(world, body, defSem, argList)
 		end), "(%b|>)", function(c) 
 			local x=parseItem(world, c, defSem, argList) 
 			table.insert(items, x)
-		end), "(.+)", function(c) 
+		end), "([^,]+)", function(c) 
 			local x=parseItem(world, c, defSem, argList) 
 			table.insert(items, x)
 		end)
@@ -247,14 +259,14 @@ function parseOrComponent(world, orComponent, orTBL, defSem, arglist, pred, det)
 			function(andComponent) return parseAndComponent(world, andComponent..")", andTBL, defSem, arglist) end
 			), " *(%w+) *(%b()) *", function(pfx,sfx) return parseAndComponent(world, pfx..sfx, andTBL, defSem, arglist) end
 			), " *([<|][0-9., ]+[>|]) *", function(andComponent) return parseAndComponent(world, andComponent, andTBL, defSem, arglist) end
-		),  "([^,]+)",
+		),  "([^,]+),?",
 			function(andComponent) return parseAndComponent(world, andComponent, andTBL, defSem, arglist) end)
 	local head=NO
 	debugPrint("parseOrComponent")
 	if(#andTBL>0) then
 		if(defSem) then
 			local predTbl=evertPredTbl(andTBL, world)
-			debugPrint({"Everted pred tbl: ", predTBL})
+			debugPrint({"Everted pred tbl: ", predTbl})
 			head=createAnonDef(world, #arglist, predTbl.preds, predTbl.convs, "and", det)
 		else
 			head=andTBL[1]

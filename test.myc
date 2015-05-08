@@ -25,7 +25,14 @@
 ?- getBuiltin("getBuiltin/2", X),pprint(X).
 ?- set(X, "function(world) return YES end"),setBuiltin("testSetBuiltin/0",X),getBuiltin("testSetBuiltin/0",Y),pprint(equal(X,Y)),pputs(X),pputs(" => "),pprint(Y).
 ?- pprint("Testing parse definition semantics.").
-det testThing1(X) :- equal(X,X), pprint("PASS").
+nondet testThing1(X) :- equal(X,X), pprint("PASS").
 ?- pputs("det testThing1(X) :- equal(X,X), pprint(PASS) => "), testThing1(YES).
-
+nondet testThing2(X) :- pputs(X), pprint(" "), pprint(X), testThing1(X).
+?- testThing2(YES).
+#?- throw(3, "Hello, error system"), catch(3).
+nondet throwIndirect(Z,Y) :- print(Y), throw(Z,Y).
+nondet testErrorSystemComplex(X) :- pputs("Attempting to throw embedded error "), throwIndirect(3,X).
+?- printWorld().
+?- testErrorSystemComplex("Hello, error system complex!"), catch(3).
+?- throw(3, "Hello, error system"), true(), catch(3), print("Goodbye, error system").
 

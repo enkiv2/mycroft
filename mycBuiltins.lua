@@ -116,8 +116,8 @@ builtins["printPred/1"]=function(world, p) if(nil==world[serialize(p)]) then ret
 helpText["printPred/1"]=[[printPred(X) will print the definition of the predicate X to stdout, if X is defined]]
 
 -- error-related functions
-builtins["throw/2"]=function(world, c, m) throw(c, "user code", "", m) return YES end
-builtins["throw/1"]=function(world, c) throw(c, "user code", "", "") return YES end
+builtins["throw/2"]=function(world, c, m) throw(c, "throw/2", serialize({c,m}), m) return YES end
+builtins["throw/1"]=function(world, c) throw(c, "throw/2", serialize({c}), "") return YES end
 helpText["throw/1"]=[[throw(X) and throw(X,Msg) will throw the error represented by the error code X
 Available error codes include:
 MYC_ERR_NOERR	]]..tostring(MYC_ERR_NOERR)..[[	no error
