@@ -68,9 +68,11 @@ function main(argv)
 			end
 		end
 	end
+	package.path=package.path..";/usr/share/lua/5.1/?/init.lua;/usr/share/lua/5.1/?.lua"
 	if(not pcall(require,"mycCore")) then
-		if(not pcall(require, "mycroft")) then
-			print("Error: cannot load library!")
+		local s,e=pcall(require, "mycroft")
+		if(not s) then
+			print("Error: cannot load library! "..tostring(e))
 			os.exit(1)
 		end
 	end
