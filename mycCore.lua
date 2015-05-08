@@ -160,13 +160,18 @@ function createAnonFact(world, arity, hash, truth) -- create an anonymous fact
 end
 
 -- interactive interpreter main loop
+require("mycPretty")
+prompt="?-"
+if(ansi) then
+	prompt=colorCode("black", "green")..prompt..colorCode("black", "white")
+end
 function mainLoop(world)
-	io.write("?- ")
+	io.write(prompt)
 	line=io.read("*l")
 	if(nil==line) then return false end
 	if(nil==string.find(line, ":%-")) then line="?- "..line end
 	debugPrint("LINE: "..line)
-	print(serialize(parseLine(world, line)))
+	print(pretty(serialize(parseLine(world, line))))
 	if(MYCERR~=MYC_ERR_NOERR) then
 		construct_traceback(MYCERR, "mainloop", {})
 		print(MYCERR_STR)

@@ -121,4 +121,29 @@ function strDef(world, k) -- return the definition of the predicate k as a strin
 	end
 	return ret
 end
+-- ANSI color code handling
+colors={black=0, red=1, green=2, yellow=3, blue=4, magenta=5, cyan=6, white=7, none=0}
+function colorCode(bg, fg) 
+	if(bg==nil) then 
+		return string.char(27).."[0m" 
+	end 
+	return string.char(27).."["..tostring(30+colors[fg])..";"..tostring(40+colors[bg]).."m" 
+end
+function pretty(msg)
+	if(ansi) then
+		msg=string.gsub(string.gsub(string.gsub(string.gsub(string.gsub(colorCode("black", "white")..msg..colorCode("black", "yellow"), 
+			"(%w+ *%b())", function (c)
+				return colorCode("black", "cyan")..c..colorCode("black", "white")
+			end), "([()])", function (c)
+				return colorCode("black", "magenta")..c..colorCode("black", "white")
+			end), "([?:]%-)", function (c) 
+				return colorCode("black", "green")..c..colorCode("black", "white") 
+			end), "([<|][0-9.,]+[|>])", function(c) 
+				return colorCode("black", "yellow")..c..colorCode("black", "white") 
+			end), "%b\"\"", function(c)
+				return colorCode("black", "red")..c..colorCode("black", "white")
+			end)
+	end
+	return msg
+end
 

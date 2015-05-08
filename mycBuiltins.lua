@@ -6,16 +6,14 @@ banner=[[
  / /|_/ / // / __/ __/ _ \/ _/ __/     Logic
 /_/  /_/\_, /\__/_/  \___/_/ \__/   Language
        /___/  v. ]]..tostring(version).."\n"
-
-colors={black=0, red=1, green=2, yellow=3, blue=4, magenta=5, cyan=6, white=7, none=0}
-function colorCode(bg, fg) if(bg==nil) then return string.char(27).."[0m" end return string.char(27).."["..tostring(30+colors[fg])..";"..tostring(40+colors[bg]).."m" end
+require("mycPretty")
 ansibanner=(
 colorCode("black", "red")..
-[[   __  ___                  _____            ]]..colorCode().."\n"..colorCode("black", "red")..
-[[  /  |/  /_ _____________  / _/ /_ ]]..colorCode("black", "white").."Composite "..colorCode().."\n"..colorCode("black", "yellow")..
-[[ / /|_/ / // / __/ __/ _ \/ _/ __/]]..colorCode("black", "white").."     Logic "..colorCode().."\n"..colorCode("black", "green")..
-[[/_/  /_/\_, /\__/_/  \___/_/ \__/]]..colorCode("black", "white").."   Language "..colorCode().."\n"..colorCode("black", "cyan")..
-[[       /___/  v. ]]..tostring(version)..string.rep(" ", 44-16-#tostring(version))..colorCode().."\n")
+[[   __  ___                  _____            ]].."\n"..
+[[  /  |/  /_ _____________  / _/ /_ ]]..colorCode("black", "white").."Composite \n"..colorCode("black", "yellow")..
+[[ / /|_/ / // / __/ __/ _ \/ _/ __/]]..colorCode("black", "white").."     Logic \n"..colorCode("black", "green")..
+[[/_/  /_/\_, /\__/_/  \___/_/ \__/]]..colorCode("black", "white").."   Language \n"..colorCode("black", "cyan")..
+[[       /___/  v. ]]..tostring(version)..string.rep(" ", 44-16-#tostring(version))..colorCode("black", "white").."\n")
 
 copying=[[Mycroft (c) 2015, John Ohno.
 All rights reserved.
@@ -44,11 +42,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 (License text: BSD-3)
 ]]
-help=[[For syntax help, use help("syntax").
-For help with a builtin, use help(builtin/arity).
-To list builtins, use builtins().
-To print the definitions of all defined predicates, use printWorld().\nFor version information, use help("version").
-For information about licensing, use help("copying").]] 
+help=[[
+() For syntax help, use help("syntax").
+() For help with a builtin, use help(builtin/arity).
+() To list builtins, use builtins().
+() To print the definitions of all defined predicates, use printWorld().
+() For version information, use help("version").
+() For information about licensing, use help("copying").]] 
 syntaxHelp=[[Mycroft syntax
 
 Mycroft has a prolog-like syntax, consisting of predicate definitions and queries.
@@ -94,7 +94,7 @@ helpText["exit/1"]=helpText["exit/0"]
 -- pretty-printing/introspection functions
 builtins["printWorld/0"]=function(world) printWorld(world) return YES end
 helpText["printWorld/0"]=[[printWorld() will print the definitions of all defined predicates]]
-builtins["printPred/1"]=function(world, p) if(nil==world[serialize(p)]) then return NO end print(strDef(world, serialize(p))) return YES end
+builtins["printPred/1"]=function(world, p) if(nil==world[serialize(p)]) then return NO end print(pretty(strDef(world, serialize(p)))) return YES end
 helpText["printPred/1"]=[[printPred(X) will print the definition of the predicate X to stdout, if X is defined]]
 
 -- error-related functions
@@ -350,7 +350,7 @@ function initBuiltins()
 end
 builtins["builtins/0"]=function(world) for k,v in pairs(builtins) do print(tostring(k)) end return YES end
 helpText["builtins/0"]="builtins/0\tprint all built-in predicates"
-builtins["help/0"]=function(world) print(help) return YES end
+builtins["help/0"]=function(world) print(pretty(help)) return YES end
 helpText["help/0"]="print general help message"
 helpText["help/1"]="help(X)\tprint help with topic X. See help/0 for details."
 helpText[""]=help
@@ -359,9 +359,9 @@ helpText["syntax"]=syntaxHelp
 helpText["version"]=tostring(version)
 builtins["help/1"]=function(world,c) 
 	c=serialize(c)
-	if(nil~=helpText[c]) then print(helpText[c])
+	if(nil~=helpText[c]) then print(pretty(helpText[c]))
 	else 
-		print("No help available for "..serialize(c)) 
+		print(pretty("No help available for "..serialize(c)))
 		return NO
 	end 
 return YES end
@@ -369,9 +369,12 @@ builtins["copying/0"]=function(world) print(builtins["copying"]) end
 helpText["copying/0"]=helpText["copying"]
 helpText["banner"]=banner
 helpText["ansibanner"]=ansibanner
+if(ansi) then
+	helpText["banner"]=ansibanner
+end
 helpText["banner/0"]=helpText["banner"]
 builtins["banner/0"]=function(world) print(helpText["banner"]) return YES end
-helpText["welcome/0"]=helpText["ansibanner"].."\nType help(). for help, and copying(). for copying information.\n"
+helpText["welcome/0"]=helpText["banner"].."\nType help(). for help, and copying(). for copying information.\n"
 builtins["welcome/0"]=function(world) print(helpText["welcome/0"]) return YES end
 builtins["runtests/0"]=function(world) test() return YES end
 helpText["runtests/0"]="Run the test suite"

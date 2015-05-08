@@ -3,6 +3,7 @@
 paranoid=false
 verbose=false
 version=0.01
+ansi=true
 
 usage="Mycroft v"..tostring(version)..[[
 
@@ -15,9 +16,14 @@ Usage:
 Options:
 	-h|-?|-help|--help		Print this help
 	-i				Interactive mode
+	+i				Disable interactive mode (default)
 	-t				Run test suite
+	+t				Do not run test suite (default)
 	-p				Paranoid mode (disable some potentially insecure network-related features
+	+ansi				Enable ANSI color codes (default)
+	-ansi				Disable ANSI color codes
 	-v				Verbose
+	+v				Non-verbose (default)
 	-e statement			Execute statement
 ]]
 
@@ -41,9 +47,15 @@ function main(argv)
 				print(usage)
 				os.exit(0)
 			elseif("-t"==arg) then testMode=true if(not forceInteractive) then interactive=false end
+			elseif("+t"==arg) then testMode=false
+			elseif("+p"==arg) then paranoid=false
 			elseif("-p"==arg) then paranoid=true
+			elseif("+v"==arg) then verbose=false
 			elseif("-v"==arg) then verbose=true
+			elseif("+ansi"==arg) then ansi=true
+			elseif("-ansi"==arg) then ansi=false
 			elseif("-i"==arg) then interactive=true forceInteractive=true
+			elseif("+i"==arg) then interactive=false forceInteractive=false
 			elseif("-e"==arg) then nextStr=true if(not forceInteractive) then interactive=false end
 			else 
 				if(not forceInteractive) then interactive=false end
@@ -58,6 +70,9 @@ function main(argv)
 	end
 	require("mycCore")
 	initMycroft()
+	if(ansi) then
+		print(colorCode("black", "white"))
+	end
 	for _,f in ipairs(files) do
 		parseFile(world, f)
 	end
@@ -77,3 +92,4 @@ end
 
 
 main(arg)
+print(colorCode())
