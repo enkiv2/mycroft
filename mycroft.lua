@@ -88,6 +88,7 @@ function main(argv)
 		print(serialize(executePredicateNA(world, "welcome", {})))
 		local x=mainLoop(world)
 		while (x) do x=mainLoop(world) end
+		if(readline~=nil) then readline.save_history() end
 	end
 end
 

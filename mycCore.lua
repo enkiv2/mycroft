@@ -190,9 +190,13 @@ if(ansi) then
 end
 prompt=ps1
 lineContinuation=""
-function mainLoop(world)
+getline=function(prompt) 
 	io.write(prompt)
-	line=io.read("*l")
+	return io.read("*l")
+end
+function mainLoop(world)
+	local success,line=pcall(getline,prompt)
+	if(not success) then return false end
 	if(nil==line) then return false end
 	if(""==line) then return true end
 	if(nil==string.find(line, "^ *#") and nil==string.find(line, "%. *$") and nil==string.find(line, "%. *#")) then
@@ -224,4 +228,13 @@ function initMycroft()
 	require("mycNet")
 	setupNetworking()
 	require("mycType")
+	if(pcall(require, "readline")) then
+		readline=require("readline")
+		readline.set_options({histfile="~/mycroft_history", keeplines=1000})
+		getline=function(prompt)
+			readline.save_history()
+			if(not prompt) then return nil end
+			return readline.readline(prompt)
+		end
+	end
 end
