@@ -71,7 +71,9 @@ function main(argv)
 	require("mycCore")
 	initMycroft()
 	if(ansi) then
-		print(colorCode("black", "white"))
+		io.write(colorCode("black", "white"))
+		io.write(string.char(27).."[2J") -- clear the screen so that our color scheme is being used
+		io.write(string.char(27).."[;f") -- move to the top left of the screen
 	end
 	for _,f in ipairs(files) do
 		parseFile(world, f)
@@ -92,4 +94,4 @@ end
 
 
 main(arg)
-print(colorCode())
+print(colorCode().."\n"..string.char(27).."[0J") -- unset the color and clear the screen from the cursor on down
