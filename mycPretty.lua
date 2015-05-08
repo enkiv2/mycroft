@@ -71,7 +71,7 @@ end
 
 -- pretty-printing routines for predicate definition
 function printWorld(world) -- print all preds
-	print(strWorld(world))
+	print(pretty(strWorld(world)))
 end
 
 function strWorld(world) -- return the code for all predicates as a string
@@ -123,26 +123,41 @@ function strDef(world, k) -- return the definition of the predicate k as a strin
 end
 -- ANSI color code handling
 colors={black=0, red=1, green=2, yellow=3, blue=4, magenta=5, cyan=6, white=7, none=0}
-function colorCode(bg, fg) 
+function colorCode(bg, fg, bold) 
 	if(bg==nil) then 
 		return string.char(27).."[0m" 
 	end 
-	return string.char(27).."["..tostring(30+colors[fg])..";"..tostring(40+colors[bg]).."m" 
+	local b="0"
+	if(bold~=nil) then b="1" end
+	return string.char(27).."["..b..";"..tostring(30+colors[fg])..";"..tostring(40+colors[bg]).."m" 
 end
 function pretty(msg)
 	if(ansi) then
-		msg=string.gsub(string.gsub(string.gsub(string.gsub(string.gsub(colorCode("black", "white")..msg..colorCode("black", "yellow"), 
-			"(%w+ *%b())", function (c)
-				return colorCode("black", "cyan")..c..colorCode("black", "white")
+		msg=string.gsub(string.gsub(string.gsub(string.gsub(string.gsub(string.gsub(string.gsub(string.gsub(string.gsub(msg, 
+			"(;)", function (c)
+				return colorCode("black", "magenta", 1)..c..colorCode("black", "white")
+			end), "([.,])", function (c)
+				return colorCode("black", "magenta", 1)..c..colorCode("black", "white")
+			end), "(%w+)", function(c)
+				if("YES"==c or "NO"==c or "NC"==c) then
+					return colorCode("black", "yellow", 1)..c..colorCode("black", "white")
+				else 
+					return c
+				end
+			end),"(%w+ *%b())", function (c)
+				return colorCode("black", "cyan", 1)..c..colorCode("black", "white")
 			end), "([()])", function (c)
-				return colorCode("black", "magenta")..c..colorCode("black", "white")
+				return colorCode("black", "magenta", 1)..c..colorCode("black", "white")
 			end), "([?:]%-)", function (c) 
-				return colorCode("black", "green")..c..colorCode("black", "white") 
+				return colorCode("black", "green", 1)..c..colorCode("black", "white") 
 			end), "([<|][0-9.,]+[|>])", function(c) 
-				return colorCode("black", "yellow")..c..colorCode("black", "white") 
+				return colorCode("black", "yellow", 1)..c..colorCode("black", "white") 
 			end), "%b\"\"", function(c)
-				return colorCode("black", "red")..c..colorCode("black", "white")
+				return colorCode("black", "red")..string.gsub(c, string.char(27).."%[".."[^m]+m", "")..colorCode("black", "white")
+			end), "(#[^\n]*)", function(c)
+				return colorCode("black", "blue", 1)..string.gsub(c, string.char(27).."%[".."[^m]+m", "")..colorCode("black", "white")
 			end)
+		msg=colorCode("black", "white")..msg..colorCode("black", "white", 1)
 	end
 	return msg
 end

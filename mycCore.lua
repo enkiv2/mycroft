@@ -161,9 +161,9 @@ end
 
 -- interactive interpreter main loop
 require("mycPretty")
-prompt="?-"
+prompt="?- "
 if(ansi) then
-	prompt=colorCode("black", "green")..prompt..colorCode("black", "white")
+	prompt=colorCode("black", "green", 1)..prompt..colorCode("black", "white", 1)
 end
 function mainLoop(world)
 	io.write(prompt)
