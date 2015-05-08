@@ -29,36 +29,29 @@ end
 
 function genCorrespondences(x, y) -- given a pair of arg lists, produce correspondences between them
 	local ret, i, j, k, l
-	ret={{}, {}}
-	for i,j in ipairs(x) do
-		for k,l in ipairs(y) do
-			if(j==l) then ret[1][i]=k ret[2][k]=i end
+	ret={{}, {}, {}}
+	for i,j in ipairs(y) do
+		local matched=false
+		for k,l in ipairs(x) do
+			if(j==l) then 
+				matched=true
+				ret[2][i]=k 
+				if(not ret[1][k]) then 
+					ret[1][k]=i 
+				end 
+			end
+		end
+		if(not matched) then
+			ret[3][i]=j
 		end
 	end
+	debugPrint({"correspondences between", x, "and", y, "determined to be", ret})
 	return ret
 end
 
-function handleAnds(world, det, pred, args, ast) -- parse and handle the AND portion of a fact in definition semantics
-	local head, tail
-end
-function handleOrs(world, det, pred, args, ast) -- parse and handle the OR portion of a fact in definition semantics
-	local head, tail, remainder
-	head=args[1]
-	tail=args
-	table.remove(tail, 1)
-	if(#tail == 1) then
-		if(#(tail[1])==2 and tail[1][1]["name"]~= nil) then
-			remainder={tail[1][1], genCorrespondences(args, tail[1][2])}
-		else
-		--XXX
-		end
-	end
-	if(#head == 2 and head[1]["name"]~=nil) then
-	end
-end
 
 function parsePred(world, det, pname, pargs, pdef) -- parse a predicate definition (definition semantics)
-	local args, pred, pdeps, ast, isDet
+	local args, pred, pdeps, isDet
 	if(det~="det" and det~="nondet") then 
 		print ("Parse error: neither det nor nondet!\n >>"..det.."<< "..pname..pargs.." :- "..pdef..".")
 		os.exit(1)
@@ -66,30 +59,38 @@ function parsePred(world, det, pname, pargs, pdef) -- parse a predicate definiti
 	if(det=="det") then isDet=true else isDet=false end
 	args=parseArgs(world, pargs)
 	pred=createPredID(pname, #args)
-	ast=parseOr(world, pdef)
-	if(#ast>1) then handleOrs(world, isDet, pred, args, ast) else
-		handleAnds(world, isDet, pred, args, ast[1])
-	end
+	local orTBL={}
+	string.gsub(pdef, "([^;]+)", 
+		function(orComponent) return parseOrComponent(world, orComponent, orTBL, true, args, pname, isDet) end)
+	orTBL=evertPredTbl(orTBL, world)
+	local head=createDef(world, pred, orTBL.preds, orTBL.convs, "or", isDet)
 	return ""
 end
 
-function parseBodyComponents(world, body) 
+function parseBodyComponents(world, body, defSem, argList) 
 	local items={}
+	debugPrint("parseBodyComponents defSem="..tostring(defSem).." body="..body)
 	string.gsub(string.gsub(string.gsub(string.gsub(string.gsub(body, " *(%w+) *(%b()) *", 
 		function (pname, pargs) 
-			table.insert(items, executePredicateNA(world, pname, parseArgs(world, pargs)))
+			if(defSem) then
+				debugPrint("defining against "..pname..pargs)
+				local parsedArgs=parseArgs(world, pargs, defSem, argList)
+				table.insert(items, {pred=createPredID(pname, #parsedArgs), conv=genCorrespondences(argList, parsedArgs)})
+			else
+				table.insert(items, executePredicateNA(world, pname, parseArgs(world, pargs, defSem, argList)))
+			end
 			return "" 
 		end), "(%b<>)", function(c) 
-			local x=parseItem(world, c) 
+			local x=parseItem(world, c, defSem, argList) 
 			table.insert(items, x)
 		end), "(%b<|)", function(c) 
-			local x=parseItem(world, c) 
+			local x=parseItem(world, c, defSem, argList) 
 			table.insert(items, x)
 		end), "(%b|>)", function(c) 
-			local x=parseItem(world, c) 
+			local x=parseItem(world, c, defSem, argList) 
 			table.insert(items, x)
 		end), "(.+)", function(c) 
-			local x=parseItem(world, c) 
+			local x=parseItem(world, c, defSem, argList) 
 			table.insert(items, x)
 		end)
 	return items
@@ -97,7 +98,7 @@ end
 
 
 -- Interpreter semantics
-function parseTruth(x) -- handle the various representations of composite truth values
+function parseTruth(x, defSem, argList) -- handle the various representations of composite truth values
 	local tr
 	string.gsub(string.gsub(string.gsub(string.gsub(x, 
 		" *< *(%d*%.?%d+) *[,"..string.char(127).."] *(%d*%.?%d+) *> *", function (t, c) 
@@ -131,6 +132,8 @@ function escapeStrings(world, pargs)
 			local ret2=string.gsub(c, ",", string.char(127))
 			ret2=string.gsub(ret2,"%(", string.char(126))
 			ret2=string.gsub(ret2, "%)", string.char(125))
+			ret2=string.gsub(ret2, "<", string.char(124))
+			ret2=string.gsub(ret2, ">", string.char(123))
 			return string.gsub(ret2, "(%w+)", function(q) 
 				if("YES"==q) then 
 					return "\\Y\\E\\S" 
@@ -146,7 +149,7 @@ function escapeStrings(world, pargs)
 	ret=string.gsub(ret, "%b<>", function(c) return string.gsub(c, ",", string.char(127)) end )
 	return ret
 end
-function parseArgs(world, pargs) -- parse all sorts of lists
+function parseArgs(world, pargs, defSem, argList) -- parse all sorts of lists
 	local args
 	if(nil==pargs) then return {} end
 	args={}
@@ -155,11 +158,15 @@ function parseArgs(world, pargs) -- parse all sorts of lists
 			string.gsub(
 				string.gsub(escapeStrings(world, pargs)," *(%w+) *(%b()) *", function(pname, pargs) 
 					debugPrint("embedded call: "..pname..pargs) 
-					local x=parsePredCall(world, pname, pargs) 
-					return serialize(executePredicatePA(world, x[1], x[2])) 
+					local x=parsePredCall(world, pname, pargs, defSem, argList) 
+					if(defSem) then
+						return({pred=x[1], conv=genCorrespondences(argList, x[1])})
+					else
+						return serialize(executePredicatePA(world, x[1], x[2])) 
+					end
 				end), 
 				" *([^,]+) *", function (c) 
-					table.insert(args, parseItem(world, c)) 
+					table.insert(args, parseItem(world, c, defSem, argList)) 
 			end ), 
 		string.char(127), ",")
 
@@ -168,47 +175,93 @@ function parseArgs(world, pargs) -- parse all sorts of lists
 	return args
 end
 
-function parseStr(i) -- handle parsing strings
+function parseStr(i, defSem, argList) -- handle parsing strings
 	if(type(i)=="table") then return i end
 	local ret=string.gsub(i, "%b\"\"", function (c) return string.gsub(string.gsub(c, "^\"", ""), "\"$", "") end )
 	return ret
 end
 
-function parseItem(world, i) -- parse list items into whatever they're supposed to be
-	local ret=unificationGetItem(world, parseTruth(i))
-	ret=parseStr(ret)
+function parseItem(world, i, defSem, argList) -- parse list items into whatever they're supposed to be
+	local ret
+	if(not defSem) then
+		ret=unificationGetItem(world, parseTruth(i))
+	else
+		ret=parseTruth(i, defSem, argList)
+	end
+	ret=parseStr(ret, defsem, argList)
 	return ret
 end
 
-function parsePredCall(world, pname, pargs) 
+function parsePredCall(world, pname, pargs, defSem, argList) 
 	local args
 	debugPrint("Predicate name: "..serialize(pname))
-	args=parseArgs(world, pargs)
+	args=parseArgs(world, pargs, defSem, argList)
 	return {createPredID(pname, #args), args}
 end
 
-function parseAndComponent(world, andComponent, andTBL) -- Parse and handle the AND component of a predicate, interpreter semantics
-	for i,v in ipairs(parseBodyComponents(world, andComponent)) do
+function parseAndComponent(world, andComponent, andTBL, defSem, arglist) -- Parse and handle the AND component of a predicate, interpreter semantics
+	for i,v in ipairs(parseBodyComponents(world, andComponent, defSem, arglist)) do
 		table.insert(andTBL, v)
 	end
 	return ""
 end
 
-function parseOrComponent(world, orComponent, orTBL) -- Parse and handle the OR component of a predicate, interpreter semantics
+function evertPredTbl(t, world)
+	local ret={}
+	ret.preds={}
+	ret.convs={}
+	local i, item
+	debugPrint("table to be everted: "..serialize(t))
+	for _,i in ipairs(t) do
+		if(i.pred) then table.insert(ret.preds, i.pred) end
+		if(i.conv) then table.insert(ret.convs, i.conv) end
+		if(i.preds) then for _,item in i.preds do table.insert(ret.preds, item) end end
+		if(i.convs) then for _,item in i.convs do table.insert(ret.convs, item) end end
+		if(not (i.pred or i.conv or i.preds or i.convs)) then 
+			local tmp=inflatePredID(i)
+			if(tmp.name~=nil and tmp.arity~=nil) then
+				table.insert(ret.preds, tmp)
+				local tmp3={}
+				for item=1,tmp.arity do
+					table.insert(tmp3, item)
+				end
+				table.insert(ret.convs, genCorrespondences(tmp3, tmp3))
+			else
+				debugPrint({"Non-pred value: ", i})
+				local tr=NC
+				if(i.truth~=nil and i.confidence~=nil) then
+					tr=i
+				end
+				table.insert(ret.preds, createAnonFact(world, 0, "()", tr))
+				table.insert(ret.convs, genCorrespondences({}, {}))
+			end
+		end
+	end
+	return ret
+end
+
+function parseOrComponent(world, orComponent, orTBL, defSem, arglist, pred, det) -- Parse and handle the OR component of a predicate, interpreter semantics
 	local andTBL={}
 	string.gsub(string.gsub(string.gsub(
 		string.gsub(orComponent, "(.*)%) *,", 
-			function(andComponent) return parseAndComponent(world, andComponent..")", andTBL) end
-			), " *(%w+) *(%b()) *", function(pfx,sfx) return parseAndComponent(world, pfx..sfx, andTBL) end
-			), " *([<|][^>|]+[>|]) *", function(andComponent) return parseAndComponent(world, andComponent, andTBL) end
+			function(andComponent) return parseAndComponent(world, andComponent..")", andTBL, defSem, arglist) end
+			), " *(%w+) *(%b()) *", function(pfx,sfx) return parseAndComponent(world, pfx..sfx, andTBL, defSem, arglist) end
+			), " *([<|][0-9., ]+[>|]) *", function(andComponent) return parseAndComponent(world, andComponent, andTBL, defSem, arglist) end
 		),  "([^,]+)",
-			function(andComponent) return parseAndComponent(world, andComponent, andTBL) end)
+			function(andComponent) return parseAndComponent(world, andComponent, andTBL, defSem, arglist) end)
 	local head=NO
+	debugPrint("parseOrComponent")
 	if(#andTBL>0) then
-		head=andTBL[1]
-		table.remove(andTBL, 1)
-		for i,v in ipairs(andTBL) do
-			head=performPLBoolean(head, v, "and")
+		if(defSem) then
+			local predTbl=evertPredTbl(andTBL, world)
+			debugPrint({"Everted pred tbl: ", predTBL})
+			head=createAnonDef(world, #arglist, predTbl.preds, predTbl.convs, "and", det)
+		else
+			head=andTBL[1]
+			table.remove(andTBL, 1)
+			for i,v in ipairs(andTBL) do
+				head=performPLBoolean(head, v, "and")
+			end
 		end
 	end
 	table.insert(orTBL, head)
@@ -226,11 +279,13 @@ function parseLine(world, line) -- Hand a line off to the interpreter
 	return serialize(string.gsub(
 		string.gsub(line, "^(%l%w+)  *(%l%w+) *(%b()) *:%- *([^.]+). *$", 
 			function (det, pname, pargs, pdef) 
+				debugPrint("fact: "..pname..pargs..":-"..pdef)
 				mycnet.forwardFact(world, line)
 				return serialize(parsePred(world, det, pname, pargs, pdef))
 			end),
 		"^%?%- *(.+) *%.$", 
-		function (body) 
+		function (body)
+			debugPrint("query: "..body) 
 			local ret=mycnet.forwardRequest("?- "..body..".")
 			if(ret~=nil) then ret=canonicalizeCTV(parseTruth(ret)) end
 			if(ret~=nil and not cmpTruth(ret, NC)) then return ret end

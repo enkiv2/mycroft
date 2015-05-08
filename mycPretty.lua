@@ -1,6 +1,6 @@
 -- Pretty-printing functions
 function debugPrint(msg)
-	if(verbose) then print("debug: "..serialize(msg)) end
+	if(verbose) then print(pretty("debug: "..serialize(msg))) end
 end
 
 function serialize(args) -- serialize in Mycroft syntax
@@ -9,6 +9,8 @@ function serialize(args) -- serialize in Mycroft syntax
 		ret=string.gsub(tostring(args), string.char(127), ",")
 		ret=string.gsub(ret, string.char(126), "(")
 		ret=string.gsub(ret, string.char(125), ")")
+		ret=string.gsub(ret, string.char(124), "<")
+		ret=string.gsub(ret, string.char(123), ">")
 		ret=string.gsub(ret, "([^ ]+)", function(q) 
 			if ("\\Y\\E\\S"==q) then return "YES" 
 			elseif("\\N\\O"==q) then return "NO" 
@@ -66,6 +68,7 @@ function serialize(args) -- serialize in Mycroft syntax
 end
 
 function prettyPredID(p) -- serialize a predicate name, prolog-style
+	debugPrint("Constructing pred id: "..serialize(p.name).."/"..serialize(p.arity))
 	return p.name.."/"..p.arity
 end
 
@@ -77,8 +80,11 @@ end
 function strWorld(world) -- return the code for all predicates as a string
 	local k, v
 	ret=""
-	for k,v in pairs(world) do
-		ret=ret..strDef(world, k)
+	debugPrint({"world:", world})
+	if(world~=nil) then 
+		for k,v in pairs(world) do
+			ret=ret..strDef(world, k)
+		end
 	end
 	return "# State of the world\n"..ret
 end
@@ -107,7 +113,7 @@ function strDef(world, k) -- return the definition of the predicate k as a strin
 				ret=ret..pfx..serialize(args).." :- "
 				ret=ret..v.def.children[1].name
 				ret=ret..serialize(translateArgList(args, v.def.correspondences[1]))
-				if(nil==v.def.children[2]) then
+				if(nil~=v.def.children[2]) then
 					sep=", "
 					if(v.def.op=="or") then
 						sep="; "

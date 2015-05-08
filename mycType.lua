@@ -4,13 +4,31 @@ NC={truth=0, confidence=0}
 YES={truth=1, confidence=1}
 NO={truth=0, confidence=1}
 
-function translateArgList(list, conv) -- given an arglist and a conversion map, produce a new arglist with the order transformed
+function translateArgList(list, conv, literals) -- given an arglist and a conversion map, produce a new arglist with the order transformed
 	local l, i, j
+	if(nil==literals) then literals={} end
 	l={}
 	if(conv==nil) then return l end
-	for i,j in ipairs(conv[1]) do 
-		l[conv[2][i]]=list[conv[1][i]]
+	if(conv[1]==nil) then return l end
+	if(conv[2]==nil) then return l end
+	if(conv[3]==nil) then conv[3]={} end
+	for i,j in ipairs(conv[1]) do
+		if(conv[2][i]) then l[conv[2][i]]=list[conv[1][i]] end
+		if(conv[3][i]) then l[conv[2][i]]=conv[3][i] end
+		if(literals[i]) then l[i]=literals[i] end
 	end
+	for i,j in ipairs(conv[2]) do
+		if(conv[1][i]) then l[conv[2][i]]=list[conv[1][i]] end
+		if(conv[3][i]) then l[conv[2][i]]=conv[3][i] end
+		if(literals[i]) then l[i]=literals[i] end
+	end
+	for i,j in ipairs(conv[3]) do
+		l[i]=conv[3][i]
+	end
+	for i,j in ipairs(literals) do
+		l[i]=literals[i]
+	end
+	debugPrint({"translation of", list, "by", conv, "is", l})
 	return l
 end
 
@@ -55,6 +73,14 @@ end
 
 function createPredID(pname, parity)
 	return {name=pname, arity=parity}
+end
+
+function inflatePredID(p)
+	local t=nil
+	if(type(p)=="table") then return p end
+	string.gsub(p, "(%w+)/(%d+)", function(pname, parity) debugPrint("pname: "..pname..", arity: "..parity) t={name=pname, arity=tonumber(parity)} end )
+	if(t) then return t end
+	return p
 end
 
 -- Helper functions for unification support

@@ -1,28 +1,31 @@
 ?- print("Running test predicates from file test.myc").
-?- puts("YES => ")
+?- puts("YES => ").
 ?- YES, print(YES).
-?- puts("YES => ")
+?- puts("YES => ").
 ?- not(NO), print(YES).
-?- puts("<0.3| => ")
+?- puts("<0.3| => ").
 ?- print(not(<0.7,1>)).
-?- puts("Hello, world! => ")
+?- puts("Hello, world! => ").
 ?- print("Hello, world!").
-?- puts("Hello, world! => ")
+?- puts("Hello, world! => ").
 ?- concat("Hello, ", "world!", X), print(X).
-?- puts("YES => ")
+?- puts("YES => ").
 ?- print(not(NO)).
-?- puts("YES => ")
+?- puts("YES => ").
 ?- print(not(not(YES))).
-?- puts("YES => ")
+?- puts("YES => ").
 ?- print(equal(1,1)).
-?- puts("NO => ")
+?- puts("NO => ").
 ?- print(equal(1,2)).
-?- puts("hello => ")
+?- puts("hello => ").
 ?- set(X, "hello"), print(X).
-?- puts("YES => ")
+?- puts("YES => ").
 ?- add(1, 1, X), print(equal(X, 2)).
 ?- puts("getBuiltin(getBuiltin/2,X) => ")
 #?- getBuiltin("getBuiltin/2", X),print(X).
 ?- set(X, "function(world) return YES end"),setBuiltin("testSetBuiltin/0",X),getBuiltin("testSetBuiltin/0",Y),print(equal(X,Y)),puts(X),puts(" => "),print(Y).
+?- print("Testing parse definition semantics.").
+det testThing1(X) :- equal(X,X), print("PASS").
+?- puts("det testThing1(X) :- equal(X,X), print(PASS) => "), testThing1(YES).
 
 
