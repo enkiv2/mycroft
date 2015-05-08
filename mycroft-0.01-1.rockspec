@@ -1,12 +1,12 @@
 package = "mycroft"
-version = "0.01"
+version = "0.01-1"
 source = {
-	url = "git://github.com/enkiv2/mycroft",
+	url = "git://github.com/enkiv2/mycroft"
 	--tag = "v0.01"
 }
 
 description = {
-	summary = "A prolog-like language with composite truth values"
+	summary = "A prolog-like language with composite truth values",
 	detailed = [[
 		Mycroft is a declarative logic language with prolog-like syntax and prolog-like semantics, supporing 
 		composite truth values (a pair of floating point values for truth and confidence), distributed computing,
