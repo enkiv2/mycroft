@@ -1,31 +1,31 @@
-?- print("Running test predicates from file test.myc").
-?- puts("YES => ").
-?- YES, print(YES).
-?- puts("YES => ").
-?- not(NO), print(YES).
-?- puts("<0.3| => ").
-?- print(not(<0.7,1>)).
-?- puts("Hello, world! => ").
-?- print("Hello, world!").
-?- puts("Hello, world! => ").
-?- concat("Hello, ", "world!", X), print(X).
-?- puts("YES => ").
-?- print(not(NO)).
-?- puts("YES => ").
-?- print(not(not(YES))).
-?- puts("YES => ").
-?- print(equal(1,1)).
-?- puts("NO => ").
-?- print(equal(1,2)).
-?- puts("hello => ").
-?- set(X, "hello"), print(X).
-?- puts("YES => ").
-?- add(1, 1, X), print(equal(X, 2)).
-?- puts("getBuiltin(getBuiltin/2,X) => ")
-#?- getBuiltin("getBuiltin/2", X),print(X).
-?- set(X, "function(world) return YES end"),setBuiltin("testSetBuiltin/0",X),getBuiltin("testSetBuiltin/0",Y),print(equal(X,Y)),puts(X),puts(" => "),print(Y).
-?- print("Testing parse definition semantics.").
-det testThing1(X) :- equal(X,X), print("PASS").
-?- puts("det testThing1(X) :- equal(X,X), print(PASS) => "), testThing1(YES).
+?- pprint("Running test predicates from file test.myc").
+?- pputs("YES => ").
+?- YES, pprint(YES).
+?- pputs("YES => ").
+?- not(NO), pprint(YES).
+?- pputs("<0.3| => ").
+?- pprint(not(<0.7,1>)).
+?- pputs("Hello, world! => ").
+?- pprint("Hello, world!").
+?- pputs("Hello, world! => ").
+?- concat("Hello, ", "world!", X), pprint(X).
+?- pputs("YES => ").
+?- pprint(not(NO)).
+?- pputs("YES => ").
+?- pprint(not(not(YES))).
+?- pputs("YES => ").
+?- pprint(equal(1,1)).
+?- pputs("NO => ").
+?- pprint(equal(1,2)).
+?- pputs("hello => ").
+?- set(X, "hello"), pprint(X).
+?- pputs("YES => ").
+?- add(1, 1, X), pprint(equal(X, 2)).
+?- pputs("getBuiltin(getBuiltin/2,X) => ")
+?- getBuiltin("getBuiltin/2", X),pprint(X).
+?- set(X, "function(world) return YES end"),setBuiltin("testSetBuiltin/0",X),getBuiltin("testSetBuiltin/0",Y),pprint(equal(X,Y)),pputs(X),pputs(" => "),pprint(Y).
+?- pprint("Testing parse definition semantics.").
+det testThing1(X) :- equal(X,X), pprint("PASS").
+?- pputs("det testThing1(X) :- equal(X,X), pprint(PASS) => "), testThing1(YES).
 
 

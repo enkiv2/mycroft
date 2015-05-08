@@ -79,7 +79,7 @@ function parseBodyComponents(world, body, defSem, argList)
 			else
 				table.insert(items, executePredicateNA(world, pname, parseArgs(world, pargs, defSem, argList)))
 			end
-			return "" 
+			return ""
 		end), "(%b<>)", function(c) 
 			local x=parseItem(world, c, defSem, argList) 
 			table.insert(items, x)
@@ -130,10 +130,10 @@ function escapeStrings(world, pargs)
 	ret=string.gsub(ret, "%b\"\"", 
 		function(c) 
 			local ret2=string.gsub(c, ",", string.char(127))
-			ret2=string.gsub(ret2,"%(", string.char(126))
-			ret2=string.gsub(ret2, "%)", string.char(125))
-			ret2=string.gsub(ret2, "<", string.char(124))
-			ret2=string.gsub(ret2, ">", string.char(123))
+			ret2=string.gsub(ret2,"%(", string.char(128))
+			ret2=string.gsub(ret2, "%)", string.char(129))
+			ret2=string.gsub(ret2, "<", string.char(130))
+			ret2=string.gsub(ret2, ">", string.char(131))
 			return string.gsub(ret2, "(%w+)", function(q) 
 				if("YES"==q) then 
 					return "\\Y\\E\\S" 

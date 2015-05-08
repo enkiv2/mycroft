@@ -100,6 +100,10 @@ builtins["print/1"]=function(world, c) print(serialize(c)) return YES end
 helpText["print/1"]=[[print(X) will print the value of X to stdout, followed by a newline]]
 builtins["puts/1"]=function(world,c) io.write(serialize(c)) return YES end
 helpText["puts/1"]=[[print(X) will print the value of X to stdout]]
+builtins["pprint/1"]=function(world, c) print(pretty(serialize(c))) return YES end
+helpText["pprint/1"]=[[pprint(X) will print the syntax-highlighted value of X to stdout, followed by a newline]]
+builtins["pputs/1"]=function(world,c) io.write(pretty(serialize(c))) return YES end
+helpText["pputs/1"]=[[pprint(X) will print the syntax-highlighted value of X to stdout]]
 builtins["exit/0"]=function(world) os.exit() end
 helpText["exit/0"]="exit/0\texit interpreter with no error\nexit(X)\texit with error code X"
 builtins["exit/1"]=function(world, c) os.exit(c) end
@@ -354,6 +358,11 @@ function initBuiltins()
 			end
 			return NO
 		end
+		
+		helpText['setansi/1']="setansi(X) enables ANSI colors if X=YES, otherwise it disables them"
+		helpText['getansi/0']="getansi() returns YES if ANSI colors are enabled; otherwise it returns NO"
+		builtins['setansi/1']=function(world, a) if(cmpTruth(a, YES)) then ansi=true else ansi=false end return YES end
+		builtins['getansi/0']=function(world) if(ansi) then return YES end return NO end
 	end
 
 	if(paranoid) then 

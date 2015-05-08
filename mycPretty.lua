@@ -7,10 +7,10 @@ function serialize(args) -- serialize in Mycroft syntax
 	local ret, sep
 	if(type(args)~="table") then
 		ret=string.gsub(tostring(args), string.char(127), ",")
-		ret=string.gsub(ret, string.char(126), "(")
-		ret=string.gsub(ret, string.char(125), ")")
-		ret=string.gsub(ret, string.char(124), "<")
-		ret=string.gsub(ret, string.char(123), ">")
+		ret=string.gsub(ret, string.char(128), "(")
+		ret=string.gsub(ret, string.char(129), ")")
+		ret=string.gsub(ret, string.char(130), "<")
+		ret=string.gsub(ret, string.char(131), ">")
 		ret=string.gsub(ret, "([^ ]+)", function(q) 
 			if ("\\Y\\E\\S"==q) then return "YES" 
 			elseif("\\N\\O"==q) then return "NO" 
@@ -156,7 +156,7 @@ function pretty(msg)
 				return colorCode("black", "magenta", 1)..c..colorCode("black", "white")
 			end), "([?:]%-)", function (c) 
 				return colorCode("black", "green", 1)..c..colorCode("black", "white") 
-			end), "([<|][0-9.,]+[|>])", function(c) 
+			end), "([<|][0-9., ]+[|>])", function(c) 
 				return colorCode("black", "yellow", 1)..c..colorCode("black", "white") 
 			end), "%b\"\"", function(c)
 				return colorCode("black", "red")..string.gsub(c, string.char(27).."%[".."[^m]+m", "")..colorCode("black", "white")
