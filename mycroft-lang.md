@@ -58,4 +58,4 @@ string value of their names:
     ?- equal(hello, "hello"). 		# true
     ?- equal(X, "X"). 			# also true
 
-For some simple examples, see [test.myc](the test suite).
+For some simple examples, see [the test suite](test.myc).

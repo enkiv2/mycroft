@@ -8,4 +8,4 @@
 =======
 A prolog-like language with compound truth value logic
 
-See [mycroft-lang.md](the language documentation), or [test.myc](some simple example code from the test suite).
+See [the language documentation](mycroft-lang.md), or [some simple example code from the test suite](test.myc).
