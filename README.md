@@ -15,3 +15,8 @@ For best performance, use with luajit and install readline and luasocket:
     luarocks-5.1 install readline luasocket
     luajit mycroft.lua
 
+Or, alternately, built and install from the rockspec file:
+
+    luarocks-5.1 build mycroft-0.01-1.rockspec
+
+
