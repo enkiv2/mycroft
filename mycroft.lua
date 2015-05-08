@@ -62,7 +62,9 @@ function main(argv)
 				f, err=io.open(arg)
 				if(nil==f) then
 					print("Could not open file "..arg.." for reading: "..tostring(err).."\nTry mycroft -h for help")
-					os.exit(1)
+					if(arg~="test.myc") then 
+						os.exit(1) -- Exit only if we aren't running the automated test suite, because we should skip that
+					end
 				end
 				table.insert(files, f)
 			end
