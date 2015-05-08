@@ -16,7 +16,9 @@ description = {
 	license = "BSD-3"
 }
 dependencies = {
-	"lua ~> 5.1"
+	"lua ~> 5.1",
+	"luasocket ~> 3.0",
+	"readline ~> 1.7"
 }
 build = {
 	
