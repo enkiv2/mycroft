@@ -182,21 +182,34 @@ end
 
 -- interactive interpreter main loop
 require("mycPretty")
-prompt="?- "
+ps1="?- "
+ps2="...\t"
 if(ansi) then
-	prompt=colorCode("black", "green", 1)..prompt..colorCode("black", "white", 1)
+	ps1=colorCode("black", "green", 1)..ps1..colorCode("black", "white", 1)
+	ps2=colorCode("black", "green", 1)..ps2..colorCode("black", "white", 1)
 end
+prompt=ps1
+lineContinuation=""
 function mainLoop(world)
 	io.write(prompt)
 	line=io.read("*l")
 	if(nil==line) then return false end
-	if(nil==string.find(line, ":%-")) then line="?- "..line end
-	debugPrint("LINE: "..line)
-	print(pretty(serialize(parseLine(world, line))))
-	if(MYCERR~=MYC_ERR_NOERR) then
-		construct_traceback(MYCERR, "mainloop", {})
-		print(pretty(MYCERR_STR))
-		return false
+	if(""==line) then return true end
+	if(nil==string.find(line, "^ *#") and nil==string.find(line, "%. *$") and nil==string.find(line, "%. *#")) then
+		lineContinuation=lineContinuation..line
+		prompt=ps2
+	else
+		line=lineContinuation..line
+		lineContinuation=""
+		prompt=ps1
+		if(nil==string.find(line, ":%-")) then line="?- "..line end
+		debugPrint("LINE: "..line)
+		print(pretty(serialize(parseLine(world, line))))
+		if(MYCERR~=MYC_ERR_NOERR) then
+			construct_traceback(MYCERR, "mainloop", {})
+			print(pretty(MYCERR_STR))
+			return false
+		end
 	end
 	return true
 end
