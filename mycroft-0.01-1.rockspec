@@ -22,7 +22,7 @@ build = {
 	
 	type = "none",
 	install = {
-		modules = {
+		lua = {
 			mycroft = "init.lua",
 			["mycroft.mycBuiltins"] = "mycBuiltins.lua",
 			["mycroft.mycCore"] = "mycCore.lua",
