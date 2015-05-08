@@ -142,8 +142,6 @@ function pretty(msg)
 		msg=string.gsub(string.gsub(string.gsub(string.gsub(string.gsub(string.gsub(string.gsub(string.gsub(string.gsub(msg, 
 			"(;)", function (c)
 				return colorCode("black", "magenta", 1)..c..colorCode("black", "white")
-			end), "([.,])", function (c)
-				return colorCode("black", "magenta", 1)..c..colorCode("black", "white")
 			end), "(%w+)", function(c)
 				if("YES"==c or "NO"==c or "NC"==c) then
 					return colorCode("black", "yellow", 1)..c..colorCode("black", "white")
@@ -162,6 +160,8 @@ function pretty(msg)
 				return colorCode("black", "red")..string.gsub(c, string.char(27).."%[".."[^m]+m", "")..colorCode("black", "white")
 			end), "(#[^\n]*)", function(c)
 				return colorCode("black", "blue", 1)..string.gsub(c, string.char(27).."%[".."[^m]+m", "")..colorCode("black", "white")
+			end), "([.,])", function (c)
+				return colorCode("black", "magenta", 1)..c..colorCode("black", "white")
 			end)
 		msg=colorCode("black", "white")..msg..colorCode("black", "white", 1)
 	end
