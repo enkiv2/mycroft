@@ -2,6 +2,7 @@
 ]]--
 for _,module in ipairs({"mycBuiltins","mycCore","mycErr","mycNet","mycParse","mycPretty","mycTests","mycType"}) do
 	require("mycroft."..module)
+	package.loaded[module]=true
 end
 
 
