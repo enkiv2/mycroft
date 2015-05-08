@@ -4,6 +4,7 @@ MYCERR_STR=""
 MYC_ERR_NOERR=0
 MYC_ERR_DETNONDET=1
 MYC_ERR_UNDEFWORLD=2
+MYC_ERR_USER=3
 
 function construct_traceback(p, hash) -- add a line to the traceback
 	if(type(p)=="table") then
@@ -23,6 +24,7 @@ function error_string(code) -- convert an error code to an error message
 	if(code==MYC_ERR_NOERR) then return "No error." 
 	elseif(code==MYC_ERR_DETNONDET) then return "Predicate marked determinate has indeterminate results."
 	elseif(code==MYC_ERR_UNDEFWORLD) then return "World undefined -- no predicates found."
+	elseif(code==MYC_ERR_USER) then return "User-level exception (details follow)."
 	else return "FIXME unknown/undocumented error "..tostring(code).."." end
 end
 

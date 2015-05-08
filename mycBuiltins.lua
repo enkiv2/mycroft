@@ -116,12 +116,15 @@ builtins["printPred/1"]=function(world, p) if(nil==world[serialize(p)]) then ret
 helpText["printPred/1"]=[[printPred(X) will print the definition of the predicate X to stdout, if X is defined]]
 
 -- error-related functions
-builtins["throw/1"]=function(world, c) throw(c) return YES end
-helpText["throw/1"]=[[throw(X) will throw the error represented by the error code X
+builtins["throw/2"]=function(world, c, m) throw(c, "user code", "", m) return YES end
+builtins["throw/1"]=function(world, c) throw(c, "user code", "", "") return YES end
+helpText["throw/1"]=[[throw(X) and throw(X,Msg) will throw the error represented by the error code X
 Available error codes include:
 MYC_ERR_NOERR	]]..tostring(MYC_ERR_NOERR)..[[	no error
 MYC_ERR_UNDEFWORLD	]]..tostring(MYC_ERR_UNDEFWORLD)..[[	world undefined
-MYC_ERR_DETNONDET	]]..tostring(MYC_ERR_DETNONDET)..[[	determinacy conflict: predicate marked det is not determinate, or a predicate marked nondet is having a fact assigned to it]]
+MYC_ERR_DETNONDET	]]..tostring(MYC_ERR_DETNONDET)..[[	determinacy conflict: predicate marked det is not determinate, or a predicate marked nondet is having a fact assigned to it
+MYC_ERR_USER		]]..tostring(MYC_ERR_USER)..[[		user-defined error.]]
+helpText["throw/2"]=helpText["throw/1"]
 builtins["catch/1"]=function(world, c) if(MYCERR==c) then MYCERR=MYC_ERR_NOERR MYCERR_STR="" return YES end if(MYCERR==MYC_ERR_NOERR) then return YES end return NO end
 helpText["catch/1"]=[[catch(X) will catch the error represented by the error code X and return YES. If there is an error but it is not X, it will return NO.
 Available error codes include:
