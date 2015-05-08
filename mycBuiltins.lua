@@ -85,6 +85,18 @@ The result of a query will be printed to standard output.
 
 Comments begin with a hash mark:
 	# This is a "comment".
+
+Variables begin with a capital letter, and are immutable:
+	?- set(X, "Hello"), print(X). 		# prints "Hello"
+	?- set(X, "Hello"), set(X, "Goodbye"). 	# fails
+	?- set(x, "Hello"). 			# also fails
+
+Strings are surrounded by double quotes, however, words containing only
+letters, numbers, and underscores that do not begin with an uppercase letter
+will be evaluated as strings. Unbound variables will also evaluate as the
+string value of their names:
+	?- equal(hello, "hello"). 		# true
+	?- equal(X, "X"). 			# also true
 ]]
 
 -- simple functions
