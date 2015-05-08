@@ -68,7 +68,12 @@ function main(argv)
 			end
 		end
 	end
-	require("mycCore")
+	if(not pcall(require,"mycCore")) then
+		if(not pcall(require, "mycroft")) then
+			print("Error: cannot load library!")
+			os.exit(1)
+		end
+	end
 	initMycroft()
 	if(ansi) then
 		io.write(colorCode("black", "white"))
@@ -89,9 +94,9 @@ function main(argv)
 		local x=mainLoop(world)
 		while (x) do x=mainLoop(world) end
 	end
+	print(colorCode().."\n"..string.char(27).."[0J") -- unset the color and clear the screen from the cursor on down
 end
 
 
 
 main(arg)
-print(colorCode().."\n"..string.char(27).."[0J") -- unset the color and clear the screen from the cursor on down
