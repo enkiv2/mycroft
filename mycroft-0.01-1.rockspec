@@ -20,19 +20,21 @@ dependencies = {
 }
 build = {
 	
-	type = "builtin",
-	modules = {
-		mycroft = "init.lua",
-		["mycroft.mycBuiltins"] = "mycBuiltins.lua",
-		["mycroft.mycCore"] = "mycCore.lua",
-		["mycroft.mycErr"] = "mycErr.lua",
-		["mycroft.mycNet"] = "mycNet.lua",
-		["mycroft.mycParse"] = "mycParse.lua",
-		["mycroft.mycPretty"] = "mycPretty.lua",
-		["mycroft.mycTests"] = "mycTests.lua",
-		["mycroft.mycType"] = "mycType.lua"
-	},
-	bin = {
-		["mycroft"] = "mycroft.lua"
+	type = "none",
+	install = {
+		modules = {
+			mycroft = "init.lua",
+			["mycroft.mycBuiltins"] = "mycBuiltins.lua",
+			["mycroft.mycCore"] = "mycCore.lua",
+			["mycroft.mycErr"] = "mycErr.lua",
+			["mycroft.mycNet"] = "mycNet.lua",
+			["mycroft.mycParse"] = "mycParse.lua",
+			["mycroft.mycPretty"] = "mycPretty.lua",
+			["mycroft.mycTests"] = "mycTests.lua",
+			["mycroft.mycType"] = "mycType.lua"
+		},
+		bin = {
+			["mycroft"] = "mycroft.lua"
+		}
 	}
 }
