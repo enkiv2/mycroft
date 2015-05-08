@@ -219,6 +219,8 @@ function mainLoop(world)
 end
 
 function initMycroft()
+	package.path=package.path..";/usr/share/lua/5.1/?.lua;/usr/local/share/lua/5.1/?.lua"
+	package.cpath=package.cpath..";/usr/lib/lua/5.1/?.so;/usr/local/lib/lua/5.1/?.so"
 	require("mycBuiltins")
 	initBuiltins()
 	require("mycTests")
@@ -228,13 +230,17 @@ function initMycroft()
 	require("mycNet")
 	setupNetworking()
 	require("mycType")
-	if(pcall(require, "readline")) then
+	local s,e = pcall(require, "readline")
+	if(s) then
+		debugPrint("Found readline; enabling")
 		readline=require("readline")
-		readline.set_options({histfile="~/mycroft_history", keeplines=1000})
+		readline.set_options({histfile="~/.mycroft_history", keeplines=1000})
 		getline=function(prompt)
 			readline.save_history()
 			if(not prompt) then return nil end
 			return readline.readline(prompt)
 		end
+	else
+		debugPrint("Could not find readline: "..tostring(e))
 	end
 end
