@@ -218,7 +218,7 @@ function mainLoop(world)
 	return true
 end
 
-function initMycroft()
+function initMycroft(world)
 	package.path=package.path..";/usr/share/lua/5.1/?.lua;/usr/local/share/lua/5.1/?.lua"
 	package.cpath=package.cpath..";/usr/lib/lua/5.1/?.so;/usr/local/lib/lua/5.1/?.so"
 	require("mycBuiltins")
@@ -242,5 +242,22 @@ function initMycroft()
 		end
 	else
 		debugPrint("Could not find readline: "..tostring(e))
+	end
+	local home=os.getenv("HOME")
+	if(nil==home) then
+		home=""
+	end
+	local cfg=string.split(package.config, "[\n]")
+	sep=cfg[1]
+	debugPrint("Home directory: "..home)
+	debugPrint("Config files: "..home..sep..".mycroftrc "..sep.."etc"..sep.."mycroftrc")
+	s,e = pcall(io.open, home..sep..".mycroftrc")
+	if(s and nil~=e) then
+		parseFile(world, e)
+	else
+		s,e = pcall(io.open, sep.."etc"..sep.."mycroftrc")
+		if(s and nil~=e) then
+			parseFile(world, e)
+		end
 	end
 end

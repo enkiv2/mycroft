@@ -78,7 +78,7 @@ function main(argv)
 			os.exit(1)
 		end
 	end
-	initMycroft()
+	initMycroft(world)
 	if(ansi) then
 		io.write(colorCode("black", "white"))
 		io.write(string.char(27).."[2J") -- clear the screen so that our color scheme is being used
