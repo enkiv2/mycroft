@@ -27,6 +27,7 @@ Options:
 	+v				Non-verbose (default)
 	-d 				Daemon mode (listen for requests)
 	+d 				Disable daemon mode (default)
+	-j n				Spawn n worker jobs
 	-l port				Set listen port
 	-P peername peerport		Add peer 
 	-e statement			Execute statement
@@ -46,12 +47,13 @@ function main(argv)
 	local nextPN=false
 	local nextPP=false
 	local nextLP=false
+	local nextJ=false
 	local port=1960
 	local peer={}
 	if(#argv==0) then
 		interactive=true
 	else
-		for i,arg in ipairs(argv) do
+		for _,arg in ipairs(argv) do
 			if(nextStr) then 
 				table.insert(strs, arg)
 				nextStr=false
@@ -66,6 +68,20 @@ function main(argv)
 			elseif(nextLP) then
 				port=tonumber(arg)
 				nextLP=false
+			elseif(nextJ) then
+				nextJ=false
+				local jobCount=tonumber(arg)
+				if(jobCount~=nil) then
+					local i
+					local chunk=""
+					for i=1,jobCount do
+						chunk=chunk.." -P 127.0.0.1 "..tostring(port+i)
+						table.insert(peers, {"127.0.0.1", port+i})
+					end
+					for i=1,jobCount do
+						os.execute("mycroft -d -l "..tostring(port+i)..chunk.." > _mycroft_log_"..tostring(port+i).." &")
+					end
+				end
 			elseif("-h"==arg or "-help"==arg or "--help"==arg or "-?"==arg) then
 				print(usage)
 				os.exit(0)
@@ -74,8 +90,9 @@ function main(argv)
 			elseif("+p"==arg) then paranoid=false
 			elseif("-p"==arg) then paranoid=true
 			elseif("+d"==arg) then daemonMode=false
-			elseif("-d"==arg) then daemonMode=true interactive=false forceInteractive=false
+			elseif("-d"==arg) then daemonMode=true interactive=false forceInteractive=false ansi=false
 			elseif("-P"==arg) then nextPN=true
+			elseif("-j"==arg) then nextJ=true
 			elseif("+v"==arg) then verbose=false
 			elseif("-v"==arg) then verbose=true
 			elseif("+ansi"==arg) then ansi=true
