@@ -176,6 +176,7 @@ function main(argv)
 			coroutine.yield()
 		elseif(daemonMode) then
 			while(true) do
+				mycnet.yield(world)
 				coroutine.yield()
 			end
 		end
