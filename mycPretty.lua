@@ -48,7 +48,7 @@ function serialize(args) -- serialize in Mycroft syntax
 			if(string.find(v, "[^A-Za-z0-9]")==nil) then
 				ret=ret..v
 			else
-				ret=ret.."\""..v.."\""
+				ret=ret.."\""..serialize(v).."\""
 			end
 		else
 			ret=ret..tostring(v)
@@ -61,7 +61,7 @@ function serialize(args) -- serialize in Mycroft syntax
 			if(type(v)=="table") then
 				ret=ret..serialize(v)
 			elseif(type(v)=="string") then
-				ret=ret.."\""..v.."\""
+				ret=ret.."\""..serialize(v).."\""
 			else
 				ret=ret..tostring(v)
 			end
