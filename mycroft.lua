@@ -102,7 +102,7 @@ end
 
 
 
-main(arg)
---local s,e = pcall(main, arg)
---if(not s) then print(e)  end
+-- main(arg) -- in case of debugging issues, give better traceback
+local s,e = pcall(main, arg)
+if(not s) then print(e)  end
 print(colorCode().."\n"..string.char(27).."[0J") -- unset the color and clear the screen from the cursor on down
