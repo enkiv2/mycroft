@@ -289,7 +289,7 @@ function parseLine(world, line) -- Hand a line off to the interpreter
 	if(""==line) then return line end
 	if("#"==line[0]) then return "" end
 	return serialize(string.gsub(
-		string.gsub(line, "^(%l%w+)  *(%l%w+) *(%b()) *:%- *([^.]+). *$", 
+		string.gsub(line, "^(%l%w+)  *(%l%w+) *(%b()) *:%- *(.+). *$", 
 			function (det, pname, pargs, pdef) 
 				debugPrint("fact: "..pname..pargs..":-"..pdef)
 				mycnet.forwardFact(world, line)
