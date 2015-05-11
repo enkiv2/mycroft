@@ -79,6 +79,7 @@ function setupNetworkingLSOCK()
 	end -- send a line of code to next peer
 	mycnet.checkMailbox=function(world) 
 		local client, e=mycnet.server:accept()
+		netPrint({client, e})
 		if(nil==client) then return mycnet.mailbox end
 		if(daemonMode) then 
 			client:settimeout(300)
@@ -86,7 +87,7 @@ function setupNetworkingLSOCK()
 			client:settimeout(10)
 		end
 		local line,err=client:receive("*l")
-		debugPrint({line, err})
+		netPrint({line, err})
 		if(nil~=line) then
 			netPrint("got line [["..tostring(line).."]] from peer "..serialize(client:getpeername()))
 			if(string.find(line, '^ *%?%-')~=nil) then
