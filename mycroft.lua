@@ -129,6 +129,8 @@ function main(argv)
 		io.write(string.char(27).."[2J") -- clear the screen so that our color scheme is being used
 		io.write(string.char(27).."[;f") -- move to the top left of the screen
 	end
+	mycnet={}
+	mycnet.port=port
 	initMycroft(world)
 	mycnet.port=port
 	mycnet.restartServer()

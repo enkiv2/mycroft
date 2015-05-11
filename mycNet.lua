@@ -1,5 +1,7 @@
 -- Support for distributed mycroft clusters
-mycnet={}
+if(not mycnet) then 
+	mycnet={}
+end
 function setupNetworkingNMCU()
 	debugPrint("detected NodeMCU; setting up.")
 	setupNetworkingCommon()
@@ -93,7 +95,9 @@ function setupNetworkingLSOCK()
 end
 function setupNetworkingCommon()
 	netPrint("setting up common networking features")
-	mycnet.port=1960 -- hardcode default for now
+	if(not mycnet.port) then
+		mycnet.port=1960 -- hardcode default for now
+	end
 	mycnet.backlog=512
 	mycnet.peers={}
 	mycnet.mailbox={}
