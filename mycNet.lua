@@ -75,6 +75,7 @@ function setupNetworkingLSOCK()
 			client=socket.connect(unpack(peer))
 		end
 		if(peer==firstPeer) then return nil end
+		client:settimeout(0.1)
 		client:send(c.."\n")
 		local ret=client:receive("*l")
 		return ret
