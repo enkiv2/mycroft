@@ -40,7 +40,7 @@ function genCorrespondences(x, y) -- given a pair of arg lists, produce correspo
 	for i,j in ipairs(y) do
 		local matched=false
 		for k,l in ipairs(x) do
-			if(j==l) then 
+			if(j==l and j~=nil and l~=nil) then 
 				matched=true
 				debugPrint({"x[",i,"]=",j,"<==>",l,"=y[",k,"]"})
 				debugPrint({"ret[1][",i,"]=",k})

@@ -474,6 +474,6 @@ helpText["addpeer/2"]="addpeer(Address,Port)\tadd a peer with the specified info
 defaultConfig=[[
 nondet open(FName, X) :- open(FName, r, X).
 nondet err(Msg) :- throw(3, Msg).
-nondet welcome() :- banner(), print(""), pprint("Type 'help().' for help, and 'copying().' for copying information.").
+nondet welcome() :- banner(), print(""), pprint("Type 'help().' for help, and 'copying().' for copying information."), print("").
 ?- welcome().
 ]]

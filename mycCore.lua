@@ -142,20 +142,20 @@ function createDef(world, pred, preds, convs, op, det, literals) -- define a pre
 			world[p].def.literals[2]=literals[2]
 			world[p].def.op=op
 		else
-			preds_head=preds[#preds]
+			local preds_head=preds[#preds]
 			table.remove(preds, #preds)
-			convs_head=convs[#convs]
+			local convs_head=convs[#convs]
 			table.remove(convs, #convs)
-			literals_head=literals[#literals]
+			local literals_head=literals[#literals]
 			table.remove(literals, #literals)
-			sconv={}
+			local sconv={}
 			sconv[1]={}
 			sconv[2]={}
 			for i=0,pred.arity do
 				sconv[1][i]=i
 				sconv[2][i]=i
 			end
-			spred=createAnonDef(world, pred.arity, preds, convs, op, det, literals_head)
+			local spred=createAnonDef(world, pred.arity, preds, convs, op, det, literals_head)
 			return createDef(world, pred, {spred, preds_head}, {sconv, convs_head}, op, det, literals)
 		end
 	else
