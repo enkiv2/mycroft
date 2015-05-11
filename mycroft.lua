@@ -133,8 +133,6 @@ function main(argv)
 	mycnet={}
 	mycnet.port=port
 	initMycroft(world)
-	mycnet.port=port
-	mycnet.restartServer()
 	for _,f in ipairs(peers) do
 		table.insert(mycnet.peers, f)
 	end

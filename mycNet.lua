@@ -49,12 +49,14 @@ function setupNetworkingLSOCK()
 		socket=require("socket")
 	end
 	if(nil==socket) then
-		debugPrint("luasocket failed to load; falling back to dummy")
+		s,e=pcall(require, "socket")
+		debugPrint("luasocket failed to load: "..e.."; falling back to dummy")
 		return setupNetworkingDummy()
 	end
 	mycnet.restartServer=function()
-		mycnet.server=socket.bind("*", mycnet.port, mycnet.backlog)
-		if(nil==mycnet.server) then return setupNetworkingDummy() end
+		local err
+		mycnet.server, err=socket.bind("*", mycnet.port, mycnet.backlog)
+		if(nil==mycnet.server) then netPrint(err) return setupNetworkingDummy() end
 		if(daemonMode) then
 			mycnet.server:settimeout(300, 't')
 		else
