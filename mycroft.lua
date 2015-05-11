@@ -81,7 +81,7 @@ function main(argv)
 						table.insert(jobs, {"127.0.0.1", port+i})
 					end
 					for i=1,jobCount do
-						local tmp=string.gsub(chunk, "-P 1270.0.01 "..tostring(port+1), "")
+						local tmp=string.gsub(chunk, "-P 127.0.0.1 "..tostring(port+1), "")
 						os.execute("sh -c 'echo PID $$ > _mycroft_log_"..tostring(port+1).." ; mycroft -d -l "..tostring(port+i)..tmp.." >> _mycroft_log_"..tostring(port+i).." ' &")
 					end
 				end
