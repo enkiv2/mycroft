@@ -255,7 +255,10 @@ function exitClean(c)
 	if(jobCount) then
 		if(jobs) then
 			for _,j in ipairs(jobs) do
-				mycnet.forwardFact({}, '?- print("Master process closing; killing slave jobs."), exit().')
+				local x=mycnet.forwardRequest({}, '?- print("Master process closing; killing slave jobs."), exit().')
+				while(not x) do
+					x=mycnet.forwardRequest({}, '?- print("Master process closing; killing slave jobs."), exit().')
+				end
 			end
 		end
 	end
