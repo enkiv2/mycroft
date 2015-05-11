@@ -292,15 +292,17 @@ function parseLine(world, line) -- Hand a line off to the interpreter
 		string.gsub(line, "^(%l%w+)  *(%l%w+) *(%b()) *:%- *(.+). *$", 
 			function (det, pname, pargs, pdef) 
 				debugPrint("fact: "..pname..pargs..":-"..pdef)
-				mycnet.forwardFact(world, line)
+				pcall(mycnet.forwardFact, world, line)
 				return serialize(parsePred(world, det, pname, pargs, pdef))
 			end),
 		"^%?%- *(.+) *%.$", 
 		function (body)
 			debugPrint("query: "..body) 
-			local ret=mycnet.forwardRequest("?- "..body..".")
-			if(ret~=nil) then ret=canonicalizeCTV(parseTruth(ret)) end
-			if(ret~=nil and not cmpTruth(ret, NC)) then return ret end
+			if(forwardQueries) then
+				local ret=mycnet.forwardRequest(world, "?- "..body..".")
+				if(ret~=nil) then ret=canonicalizeCTV(parseTruth(ret)) end
+				if(ret~=nil and not cmpTruth(ret, NC)) then return ret end
+			end
 			local orTBL={}
 			string.gsub(body, "([^;]+)", 
 				function(orComponent) return parseOrComponent(world, orComponent, orTBL) end)

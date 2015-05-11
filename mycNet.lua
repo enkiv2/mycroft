@@ -65,7 +65,9 @@ function setupNetworkingLSOCK()
 	end
 	mycnet.forwardRequest=function(world, c) 
 		local firstPeer=mycnet.getCurrentPeer(world)
+		netPrint({"firstPeer", firstPeer})
 		local peer=mycnet.getNextPeer(world)
+		netPrint({"peer", peer})
 		if(nil==peer) then return nil end
 		local client=socket.connect(unpack(peer))
 		while(nil==client and peer~=firstPeer) do

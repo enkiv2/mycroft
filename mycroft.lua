@@ -4,6 +4,7 @@ paranoid=false
 verbose=false
 version=0.01
 ansi=true
+forwardQueries=false
 
 usage="Mycroft v"..tostring(version)..[[
 
