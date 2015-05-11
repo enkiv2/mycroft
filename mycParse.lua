@@ -288,7 +288,7 @@ function parseLine(world, line) -- Hand a line off to the interpreter
 	if(nil==line) then return line end
 	if(""==line) then return line end
 	if("#"==line[0]) then return "" end
-	return serialize(string.gsub(
+	local rets=serialize(string.gsub(
 		string.gsub(line, "^(%l%w+)  *(%l%w+) *(%b()) *:%- *(.+). *$", 
 			function (det, pname, pargs, pdef) 
 				debugPrint("fact: "..pname..pargs..":-"..pdef)
@@ -315,6 +315,8 @@ function parseLine(world, line) -- Hand a line off to the interpreter
 			return serialize(head)
 		end
 	))
+	pcall(coroutine.yield)
+	return rets
 end 
 
 function parseFile(world, file)

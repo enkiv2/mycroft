@@ -96,7 +96,7 @@ function setupNetworkingCommon()
 	mycnet.pptr=1
 	mycnet.forwardedLines={}
 	mycnet.getPeers=function(world) return mycnet.peers end -- get a list of peers
-	mycnet.getCurrentPeer=function(world) return mycnet.peers[mycnet.pttr] end 
+	mycnet.getCurrentPeer=function(world) local ret=mycnet.peers[mycnet.pptr] return ret end 
 	mycnet.getNextPeer=function(world) 
 		mycnet.pptr=mycnet.pptr+1 
 		if(mycnet.pptr>#mycnet.peers) then mycnet.pptr=1 end
@@ -108,6 +108,9 @@ function setupNetworkingCommon()
 			local item=mycnet.mailbox[1]
 			table.remove(mycnet.mailbox, 1)
 			local line=item[1]
+			debugPrint({"recieved line", line})
+			if(mycnet.forwardedLines[line]) then return nil end
+			mycnet.forwardedLines[line]=true
 			ret=parseLine(world, line)
 			return nil
 		end
@@ -116,10 +119,11 @@ function setupNetworkingCommon()
 		debugPrint("forwarding fact [["..l.."]]")
 		if(mycnet.forwardedLines[l]) then return nil end
 		mycnet.forwardedLines[l]=true
-		local start=mycnet.getCurrentPeer(world)
-		if(nil==start) then return nil end
+		local sp=mycnet.getCurrentPeer(world)
+		debugPrint({"current peer", sp})
+		if(nil==sp) then return nil end
 		mycnet.forwardRequest(world, line)
-		while(start~=mycnet.getCurrentPeer()) do
+		while(sp~=mycnet.getCurrentPeer()) do
 			mycnet.forwardRequest(world, line)
 		end
 		return nil

@@ -208,7 +208,7 @@ function mainLoop(world)
 		prompt=ps1
 		if(nil==string.find(line, ":%-")) then line="?- "..line end
 		debugPrint("LINE: "..line)
-		local s, ret=pcall(parseline, world, line)
+		local s, ret=pcall(parseLine, world, line)
 		if(not s) then print(ret) print (debug.traceback()) return false end
 		s, ret=pcall(serialize, ret)
 		if(not s) then print(ret) print(debug.traceback()) return false end
@@ -246,24 +246,5 @@ function initMycroft(world)
 		end
 	else
 		debugPrint("Could not find readline: "..tostring(e))
-	end
-	local home=os.getenv("HOME")
-	if(nil==home) then
-		home=""
-	end
-	local cfg=string.split(package.config, "[\n]")
-	sep=cfg[1]
-	debugPrint("Home directory: "..home)
-	debugPrint("Config files: "..home..sep..".mycroftrc "..sep.."etc"..sep.."mycroftrc")
-	s,e = pcall(io.open, home..sep..".mycroftrc")
-	if(s and nil~=e) then
-		parseFile(world, e)
-	else
-		s,e = pcall(io.open, sep.."etc"..sep.."mycroftrc")
-		if(s and nil~=e) then
-			parseFile(world, e)
-		else
-			parseLines(world, defaultConfig)
-		end
 	end
 end

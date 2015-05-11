@@ -10,7 +10,7 @@ usage="Mycroft v"..tostring(version)..[[
 Usage:
 	mycroft
 	mycroft [-h|-?|--help|-help]
-	mycroft [file1 file2...] [[-e statement ] [-e statement2]...] [-i] [-p] [-v]
+	mycroft [file1 file2...] [[-e statement ] [-e statement2]...] [-i] [-p] [-v] [[-P peername peerport] [-P peername peerport]...]
 	mycroft -t
 
 Options:
@@ -20,10 +20,12 @@ Options:
 	-t				Run test suite
 	+t				Do not run test suite (default)
 	-p				Paranoid mode (disable some potentially insecure network-related features
+	+p 				Disable paranoid mode (default)
 	+ansi				Enable ANSI color codes (default)
 	-ansi				Disable ANSI color codes
 	-v				Verbose
 	+v				Non-verbose (default)
+	-P peername peerport		Add peer 
 	-e statement			Execute statement
 ]]
 
@@ -32,10 +34,14 @@ function main(argv)
 	files={}
 	strs={}
 	world={}
+	peers={}
 	interactive=true
 	testMode=false
 	forceInteractive=false
 	local nextStr=false
+	local nextPN=false
+	local nextPP=false
+	local peer={}
 	if(#argv==0) then
 		interactive=true
 	else
@@ -43,6 +49,14 @@ function main(argv)
 			if(nextStr) then 
 				table.insert(strs, arg)
 				nextStr=false
+			elseif(nextPN) then
+				peer[1]=arg
+				nextPN=false
+				nextPP=true
+			elseif(nextPP) then
+				peer[2]=tonumber(arg)
+				table.insert(peers, peer)
+				nextPP=false
 			elseif("-h"==arg or "-help"==arg or "--help"==arg or "-?"==arg) then
 				print(usage)
 				os.exit(0)
@@ -50,6 +64,7 @@ function main(argv)
 			elseif("+t"==arg) then testMode=false
 			elseif("+p"==arg) then paranoid=false
 			elseif("-p"==arg) then paranoid=true
+			elseif("-P"==arg) then nextPN=true
 			elseif("+v"==arg) then verbose=false
 			elseif("-v"==arg) then verbose=true
 			elseif("+ansi"==arg) then ansi=true
@@ -84,20 +99,58 @@ function main(argv)
 		io.write(string.char(27).."[;f") -- move to the top left of the screen
 	end
 	initMycroft(world)
-	for _,f in ipairs(files) do
-		parseFile(world, f)
+	for _,f in ipairs(peers) do
+		table.insert(mycnet.peers, f)
 	end
-	for _,f in ipairs(strs) do
-		parseLine(world, f)
-	end
-	if(testMode) then
-		test()
-	end
-	if(interactive) then
-		print(serialize(executePredicateNA(world, "welcome", {})))
-		local s, x=pcall(mainLoop,world)
-		while (s and x) do s, x=pcall(mainLoop,world) end
-		if(not s) then print(x) end
+	debugPrint({"peers:", mycnet.peers})
+	local mainCoroutine=coroutine.create(function() 
+		local home=os.getenv("HOME")
+		if(nil==home) then
+			home=""
+		end
+		local cfg=string.split(package.config, "[\n]")
+		sep=cfg[1]
+		debugPrint("Home directory: "..home)
+		debugPrint("Config files: "..home..sep..".mycroftrc "..sep.."etc"..sep.."mycroftrc")
+		s,e = pcall(io.open, home..sep..".mycroftrc")
+		if(s and nil~=e) then
+			parseFile(world, e)
+		else
+			s,e = pcall(io.open, sep.."etc"..sep.."mycroftrc")
+			if(s and nil~=e) then
+				parseFile(world, e)
+			else
+				parseLines(world, defaultConfig)
+			end
+		end
+		for _,f in ipairs(files) do
+			parseFile(world, f)
+		end
+		for _,f in ipairs(strs) do
+			parseLine(world, f)
+		end
+		if(testMode) then
+			test()
+		end
+		if(interactive) then
+			print(serialize(executePredicateNA(world, "welcome", {})))
+			local s, x=pcall(mainLoop,world)
+			while (s and x) do s, x=pcall(mainLoop,world) end
+			if(not s) then print(x) end
+			coroutine.yield()
+		end
+	end)
+	local listenCoroutine=coroutine.create(function()
+		while(true) do
+			mycnet.checkMailbox(world)
+			coroutine.yield()
+			mycnet.yield(world)
+			coroutine.yield()
+		end
+	end)
+	while(coroutine.status(mainCoroutine)~="dead") do
+		coroutine.resume(mainCoroutine)
+		coroutine.resume(listenCoroutine)
 	end
 	print(colorCode().."\n"..string.char(27).."[0J") -- unset the color and clear the screen from the cursor on down
 end
