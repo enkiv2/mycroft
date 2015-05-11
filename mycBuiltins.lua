@@ -377,8 +377,58 @@ function initBuiltins()
 		
 		helpText['setansi/1']="setansi(X) enables ANSI colors if X=YES, otherwise it disables them"
 		helpText['getansi/0']="getansi() returns YES if ANSI colors are enabled; otherwise it returns NO"
-		builtins['setansi/1']=function(world, a) if(cmpTruth(a, YES)) then ansi=true else ansi=false end return YES end
+		builtins['setansi/1']=function(world, a) if(cmpTruth(unificationGetItem(world, a), YES)) then ansi=true else ansi=false end return YES end
 		builtins['getansi/0']=function(world) if(ansi) then return YES end return NO end
+	
+		-- file manipulation
+		helpText['open/3']="open(Filename, Mode, X) opens Filename with Mode (a c-style mode) and sets X to the file handle. In case of error, MYC_ERR_USERERR is thrown, and NO is returned."
+		builtins['open/3']=function(world, fname, mode, ret) 
+			fname=unificationGetItem(world, fname)
+			mode=unificationGetItem(world, mode)
+			local f, err=io.open(fname, mode)
+			if (nil==f) then
+				throw(MYC_ERR_USERERR, "open", serialize({fname, mode, ret}), tostring(err))
+				return NO
+			end
+			unificationSetItem(world, ret, f)
+			return YES
+		end
+		helpText['close/1']="close(F) closes the file handle F. In case of error, MYC_ERR_USERERR is thrown, and NO is returned."
+		builtins['close/1']=function(world, f)
+			f=unificationGetItem(world, f)
+			if(nil==f) then return NO end
+			local ret,err = pcall(io.close, f)
+			if(ret) then
+				return YES
+			else
+				throw(MYC_ERR_USERERR, "close", serialize({f}), tostring(err))
+				return NO
+			end
+		end
+		helpText['fgets/2']="fgets(F, X) reads a line from the file handle F (produced by open/3) and puts the line in X. In case of error, MYC_ERR_USERERR is thrown, and NO is returned."
+		builtins['fgets/2']=function(world, f, ret)
+			f=unificationGetItem(f)
+			local s,l = pcall(io.read, f, "*l")
+			if(s) then
+				unificationSetItem(world, ret, l)
+				return YES
+			else
+				throw(MYC_ERR_USERERR, "fgets", serialize({f, ret}), tostring(l))
+				return NO
+			end
+		end
+		helpText['fputs/2']="fputs(F,X) prints the string X to the file handle F. In case of error, MYC_ERR_USERERR is thrown, and NO is returned."
+		builtins['fputs/2']=function(world, f, m)
+			f=unificationGetItem(f)
+			m=unificationGetItem(m)
+			local s,e = pcall(io.write, m)
+			if(s) then
+				return YES
+			else
+				throw(MYC_ERR_USERERR, 'fputs', serialize({f, m}), tostring(e))
+				return NO
+			end
+		end
 	end
 
 	if(paranoid) then 
