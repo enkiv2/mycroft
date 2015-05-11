@@ -78,12 +78,12 @@ function main(argv)
 			os.exit(1)
 		end
 	end
-	initMycroft(world)
 	if(ansi) then
 		io.write(colorCode("black", "white"))
 		io.write(string.char(27).."[2J") -- clear the screen so that our color scheme is being used
 		io.write(string.char(27).."[;f") -- move to the top left of the screen
 	end
+	initMycroft(world)
 	for _,f in ipairs(files) do
 		parseFile(world, f)
 	end
@@ -95,14 +95,13 @@ function main(argv)
 	end
 	if(interactive) then
 		print(serialize(executePredicateNA(world, "welcome", {})))
-		local x=mainLoop(world)
-		while (x) do x=mainLoop(world) end
+		local s, x=pcall(mainLoop,world)
+		while (s and x) do s, x=pcall(mainLoop,world) end
+		if(not s) then print(x) end
 	end
+	print(colorCode().."\n"..string.char(27).."[0J") -- unset the color and clear the screen from the cursor on down
 end
 
 
 
--- main(arg) -- in case of debugging issues, give better traceback
-local s,e = pcall(main, arg)
-if(not s) then print(e)  end
-print(colorCode().."\n"..string.char(27).."[0J") -- unset the color and clear the screen from the cursor on down
+main(arg) 

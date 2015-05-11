@@ -208,7 +208,11 @@ function mainLoop(world)
 		prompt=ps1
 		if(nil==string.find(line, ":%-")) then line="?- "..line end
 		debugPrint("LINE: "..line)
-		print(pretty(serialize(parseLine(world, line))))
+		local s, ret=pcall(parseline, world, line)
+		if(not s) then print(ret) print (debug.traceback()) return false end
+		s, ret=pcall(serialize, ret)
+		if(not s) then print(ret) print(debug.traceback()) return false end
+		print(ret)
 		if(MYCERR~=MYC_ERR_NOERR) then
 			construct_traceback("mainloop", "()")
 			print(pretty(MYCERR_STR))
