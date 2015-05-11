@@ -25,6 +25,9 @@ Options:
 	-ansi				Disable ANSI color codes
 	-v				Verbose
 	+v				Non-verbose (default)
+	-d 				Daemon mode (listen for requests)
+	+d 				Disable daemon mode (default)
+	-l port				Set listen port
 	-P peername peerport		Add peer 
 	-e statement			Execute statement
 ]]
@@ -35,12 +38,15 @@ function main(argv)
 	strs={}
 	world={}
 	peers={}
+	daemonMode=false
 	interactive=true
 	testMode=false
 	forceInteractive=false
 	local nextStr=false
 	local nextPN=false
 	local nextPP=false
+	local nextLP=false
+	local port=1960
 	local peer={}
 	if(#argv==0) then
 		interactive=true
@@ -57,6 +63,9 @@ function main(argv)
 				peer[2]=tonumber(arg)
 				table.insert(peers, peer)
 				nextPP=false
+			elseif(nextLP) then
+				port=tonumber(arg)
+				nextLP=false
 			elseif("-h"==arg or "-help"==arg or "--help"==arg or "-?"==arg) then
 				print(usage)
 				os.exit(0)
@@ -64,6 +73,8 @@ function main(argv)
 			elseif("+t"==arg) then testMode=false
 			elseif("+p"==arg) then paranoid=false
 			elseif("-p"==arg) then paranoid=true
+			elseif("+d"==arg) then daemonMode=false
+			elseif("-d"==arg) then daemonMode=true interactive=false forceInteractive=false
 			elseif("-P"==arg) then nextPN=true
 			elseif("+v"==arg) then verbose=false
 			elseif("-v"==arg) then verbose=true
@@ -71,6 +82,7 @@ function main(argv)
 			elseif("-ansi"==arg) then ansi=false
 			elseif("-i"==arg) then interactive=true forceInteractive=true
 			elseif("+i"==arg) then interactive=false forceInteractive=false
+			elseif("-l"==arg) then nextLP=true
 			elseif("-e"==arg) then nextStr=true if(not forceInteractive) then interactive=false end
 			else 
 				if(not forceInteractive) then interactive=false end
@@ -99,6 +111,8 @@ function main(argv)
 		io.write(string.char(27).."[;f") -- move to the top left of the screen
 	end
 	initMycroft(world)
+	mycnet.port=port
+	mycnet.restartServer()
 	for _,f in ipairs(peers) do
 		table.insert(mycnet.peers, f)
 	end
@@ -138,12 +152,14 @@ function main(argv)
 			while (s and x) do s, x=pcall(mainLoop,world) end
 			if(not s) then print(x) end
 			coroutine.yield()
+		elseif(daemonMode) then
+			while(true) do
+				coroutine.yield()
+			end
 		end
 	end)
 	local listenCoroutine=coroutine.create(function()
 		while(true) do
-			mycnet.checkMailbox(world)
-			coroutine.yield()
 			mycnet.yield(world)
 			coroutine.yield()
 		end

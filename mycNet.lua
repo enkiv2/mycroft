@@ -41,7 +41,7 @@ function setupNetworkingLJIT()
 	end
 end
 function setupNetworkingLSOCK()
-	debugPrint("detected luasocket; setting up.")
+	netPrint("detected luasocket; setting up.")
 	setupNetworkingCommon()
 	if(pcall(require, "socket")) then
 		socket=require("socket")
@@ -50,45 +50,49 @@ function setupNetworkingLSOCK()
 		debugPrint("luasocket failed to load; falling back to dummy")
 		return setupNetworkingDummy()
 	end
-	mycnet.server=socket.bind("*", mycnet.port, mycnet.backlog)
-	if(nil==mycnet.server) then return setupNetworkingDummy() end
-	mycnet.server:settimeout(0.1, 't')
+	mycnet.restartServer=function()
+		mycnet.server=socket.bind("*", mycnet.port, mycnet.backlog)
+		if(nil==mycnet.server) then return setupNetworkingDummy() end
+		mycnet.server:settimeout(0.1, 't')
+	end
 	mycnet.forwardRequest=function(world, c) 
 		local firstPeer=mycnet.getCurrentPeer(world)
 		local peer=mycnet.getNextPeer(world)
 		if(nil==peer) then return nil end
 		local client=socket.connect(unpack(peer))
 		while(nil==client and peer~=firstPeer) do
-			debugPrint("attempting to send "..c.." to peer "..serialize(peer))
+			netPrint("attempting to send "..c.." to peer "..serialize(peer))
 			peer=mycnet.getNextPeer(world)
 			if(nil==peer) then return nil end
 			client=socket.connect(unpack(peer))
 		end
 		if(peer==firstPeer) then return nil end
-		client:send(c)
-		local ret=client:recieve()
+		client:send(c.."\n")
+		local ret=client:receive("*l")
 		return ret
 	end -- send a line of code to next peer
 	mycnet.checkMailbox=function(world) 
-		local client=mycnet.server:accept()
+		local client, e=mycnet.server:accept()
 		if(nil==client) then return mycnet.mailbox end
 		client:settimeout(10)
-		local line,err=client:recieve()
+		local line,err=client:receive("*l")
+		debugPrint({line, err})
 		if(nil~=line) then
-			debugPrint("got line [["..tostring(line).."]] from peer "..serialize(client:getpeername()))
+			netPrint("got line [["..tostring(line).."]] from peer "..serialize(client:getpeername()))
 			if(string.find(line, '^ *%?%-')~=nil) then
-				debugPrint("line is query; executing immediately")
+				netPrint("line is query; executing immediately")
 				client:send(serialize(parseLine(world, line)))
 			else
 				table.insert(mycnet.mailbox, {line, client:getpeername()})
-				debugPrint("contents of mailbox: "..serialize(mycnet.mailbox))
+				netPrint("contents of mailbox: "..serialize(mycnet.mailbox))
 			end
 		end
 		client:close()
 	end -- get a list of requests from peers
+	return mycnet.restartServer()
 end
 function setupNetworkingCommon()
-	debugPrint("setting up common networking features")
+	netPrint("setting up common networking features")
 	mycnet.port=1960 -- hardcode default for now
 	mycnet.backlog=512
 	mycnet.peers={}
@@ -108,19 +112,17 @@ function setupNetworkingCommon()
 			local item=mycnet.mailbox[1]
 			table.remove(mycnet.mailbox, 1)
 			local line=item[1]
-			debugPrint({"recieved line", line})
-			if(mycnet.forwardedLines[line]) then return nil end
-			mycnet.forwardedLines[line]=true
+			netPrint({"received line", line})
 			ret=parseLine(world, line)
 			return nil
 		end
 	end -- process one step of somebody else's request
 	mycnet.forwardFact=function(world, l)
-		debugPrint("forwarding fact [["..l.."]]")
+		netPrint("forwarding fact [["..l.."]]")
 		if(mycnet.forwardedLines[l]) then return nil end
 		mycnet.forwardedLines[l]=true
 		local sp=mycnet.getCurrentPeer(world)
-		debugPrint({"current peer", sp})
+		netPrint({"current peer", sp})
 		if(nil==sp) then return nil end
 		mycnet.forwardRequest(world, line)
 		while(sp~=mycnet.getCurrentPeer()) do
@@ -128,10 +130,10 @@ function setupNetworkingCommon()
 		end
 		return nil
 	end
-	debugPrint("listen port="..tostring(mycnet.port)..",backlog="..tostring(mycnet.backlog))
+	netPrint("listen port="..tostring(mycnet.port)..",backlog="..tostring(mycnet.backlog))
 end
 function setupNetworkingDummy()
-	debugPrint("setting up dummy networking functions")
+	netPrint("setting up dummy networking functions")
 	mycnet.getPeers=function() return {} end -- get a list of peers
 	mycnet.getCurrentPeer=function() return nil end 
 	mycnet.forwardRequest=function(c) return nil end -- send a line of code to next peer
@@ -149,4 +151,10 @@ function setupNetworking()
 		return setupNetworkingLJIT()
 	end
 	return setupNetworkingLSOCK()
+end
+function netPrint(x)
+	if(verbose or daemonMode) then 
+		print(serialize(x))
+		io.flush()
+	end
 end
