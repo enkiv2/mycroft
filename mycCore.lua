@@ -142,12 +142,12 @@ function createDef(world, pred, preds, convs, op, det, literals) -- define a pre
 			world[p].def.literals[2]=literals[2]
 			world[p].def.op=op
 		else
-			preds_head=preds[1]
-			table.remove(preds, 1)
-			convs_head=convs[1]
-			table.remove(convs, 1)
-			literals_head=literals[1]
-			table.remove(literals, 1)
+			preds_head=preds[#preds]
+			table.remove(preds, #preds)
+			convs_head=convs[#convs]
+			table.remove(convs, #convs)
+			literals_head=literals[#literals]
+			table.remove(literals, #literals)
 			sconv={}
 			sconv[1]={}
 			sconv[2]={}
