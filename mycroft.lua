@@ -82,7 +82,7 @@ function main(argv)
 					end
 					for i=1,jobCount do
 						local tmp=string.gsub(chunk, "-P 1270.0.01 "..tostring(port+1), "")
-						os.execute("mycroft -d -l "..tostring(port+i)..tmp.." > _mycroft_log_"..tostring(port+i).." &")
+						os.execute("sh -c 'echo PID $$ > _mycroft_log_"..tostring(port+1).." ; mycroft -d -l "..tostring(port+i)..tmp.." >> _mycroft_log_"..tostring(port+i).." ' &")
 					end
 				end
 			elseif("-h"==arg or "-help"==arg or "--help"==arg or "-?"==arg) then

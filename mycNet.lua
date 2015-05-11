@@ -55,7 +55,11 @@ function setupNetworkingLSOCK()
 	mycnet.restartServer=function()
 		mycnet.server=socket.bind("*", mycnet.port, mycnet.backlog)
 		if(nil==mycnet.server) then return setupNetworkingDummy() end
-		mycnet.server:settimeout(0.1, 't')
+		if(daemonMode) then
+			mycnet.server:settimeout(300, 't')
+		else
+			mycnet.server:settimeout(0.1, 't')
+		end
 	end
 	mycnet.forwardRequest=function(world, c) 
 		local firstPeer=mycnet.getCurrentPeer(world)
@@ -76,7 +80,11 @@ function setupNetworkingLSOCK()
 	mycnet.checkMailbox=function(world) 
 		local client, e=mycnet.server:accept()
 		if(nil==client) then return mycnet.mailbox end
-		client:settimeout(10)
+		if(daemonMode) then 
+			client:settimeout(300)
+		else
+			client:settimeout(10)
+		end
 		local line,err=client:receive("*l")
 		debugPrint({line, err})
 		if(nil~=line) then
