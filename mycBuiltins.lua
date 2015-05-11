@@ -129,8 +129,8 @@ helpText["printPred/1"]=[[printPred(X) will print the definition of the predicat
 
 -- error-related functions
 require("mycErr")
-builtins["throw/2"]=function(world, c, m) throw(c, "throw/2", serialize({c,m}), m) return YES end
-builtins["throw/1"]=function(world, c) throw(c, "throw/2", serialize({c}), "") return YES end
+builtins["throw/2"]=function(world, c, m) throw(world, c, "throw/2", serialize({c,m}), m) return YES end
+builtins["throw/1"]=function(world, c) throw(world, c, "throw/2", serialize({c}), "") return YES end
 helpText["throw/1"]=[[throw(X) and throw(X,Msg) will throw the error represented by the error code X
 Available error codes include:
 MYC_ERR_NOERR		]]..tostring(MYC_ERR_NOERR)..[[	no error
@@ -138,7 +138,7 @@ MYC_ERR_UNDEFWORLD	]]..tostring(MYC_ERR_UNDEFWORLD)..[[	world undefined
 MYC_ERR_DETNONDET	]]..tostring(MYC_ERR_DETNONDET)..[[	determinacy conflict: predicate marked det is not determinate, or a predicate marked nondet is having a fact assigned to it
 MYC_ERR_USER		]]..tostring(MYC_ERR_USER)..[[		user-defined error.]]
 helpText["throw/2"]=helpText["throw/1"]
-builtins["catch/1"]=function(world, c) if(MYCERR==c) then MYCERR=MYC_ERR_NOERR MYCERR_STR="" return YES end if(MYCERR==MYC_ERR_NOERR) then return YES end return NO end
+builtins["catch/1"]=function(world, c) if(world.MYCERR==c) then world.MYCERR=MYC_ERR_NOERR world.MYCERR_STR="" return YES end if(world.MYCERR==MYC_ERR_NOERR) then return YES end return NO end
 helpText["catch/1"]=[[catch(X) will catch the error represented by the error code X and return YES. If there is an error but it is not X, it will return NO.
 Available error codes include:
 MYC_ERR_NOERR		]]..tostring(MYC_ERR_NOERR)..[[	no error
@@ -387,7 +387,7 @@ function initBuiltins()
 			mode=unificationGetItem(world, mode)
 			local f, err=io.open(fname, mode)
 			if (nil==f) then
-				throw(MYC_ERR_USERERR, "open", serialize({fname, mode, ret}), tostring(err))
+				throw(world, MYC_ERR_USERERR, "open", serialize({fname, mode, ret}), tostring(err))
 				return NO
 			end
 			unificationSetItem(world, ret, f)
@@ -401,7 +401,7 @@ function initBuiltins()
 			if(ret) then
 				return YES
 			else
-				throw(MYC_ERR_USERERR, "close", serialize({f}), tostring(err))
+				throw(world, MYC_ERR_USERERR, "close", serialize({f}), tostring(err))
 				return NO
 			end
 		end
@@ -413,7 +413,7 @@ function initBuiltins()
 				unificationSetItem(world, ret, l)
 				return YES
 			else
-				throw(MYC_ERR_USERERR, "fgets", serialize({f, ret}), tostring(l))
+				throw(world, MYC_ERR_USERERR, "fgets", serialize({f, ret}), tostring(l))
 				return NO
 			end
 		end
@@ -425,7 +425,7 @@ function initBuiltins()
 			if(s) then
 				return YES
 			else
-				throw(MYC_ERR_USERERR, 'fputs', serialize({f, m}), tostring(e))
+				throw(world, MYC_ERR_USERERR, 'fputs', serialize({f, m}), tostring(e))
 				return NO
 			end
 		end
@@ -444,9 +444,9 @@ function initBuiltins()
 						return YES
 					end
 				end
-				throw(MYC_ERR_USERERR, 'saveWorld', serialize({fname}), tostring(e))
+				throw(world, MYC_ERR_USERERR, 'saveWorld', serialize({fname}), tostring(e))
 			else
-				throw(MYC_ERR_USERERR, 'saveWorld', serialize({fname}), tostring(f))
+				throw(world, MYC_ERR_USERERR, 'saveWorld', serialize({fname}), tostring(f))
 			end
 			return NO
 		end
@@ -458,7 +458,7 @@ function initBuiltins()
 				parseFile(world, f)
 				io.close(f)
 			end
-			throw(MYC_ERR_USERERR, 'doFile', serialize({fname}), tostring(f))
+			throw(world, MYC_ERR_USERERR, 'doFile', serialize({fname}), tostring(f))
 			return NO
 		end
 	end

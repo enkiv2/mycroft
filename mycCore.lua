@@ -41,9 +41,9 @@ function executePredicatePA(world, p, args) -- execute p with the given arglist
 				executePredicatePA(world, ret.children[1], translateArgList(args, ret.correspondences[1], ret.literals[1])), 
 				executePredicatePA(world, ret.children[2], translateArgList(args, ret.correspondences[2], ret.literals[2])), ret.op)
 		end
-		if(MYCERR~=MYC_ERR_NOERR) then
+		if(world.MYCERR~=MYC_ERR_NOERR) then
 			ret=NC
-			construct_traceback(p, hash)
+			construct_traceback(world, p, hash)
 		end
 		if(det) then
 			if(ret~=NC) then
@@ -52,7 +52,7 @@ function executePredicatePA(world, p, args) -- execute p with the given arglist
 		end
 		return ret
 	else
-		throw(MYC_ERR_UNDEFWORLD, p, hash, "")
+		throw(world, MYC_ERR_UNDEFWORLD, p, hash, "")
 		return NC
 	end
 end
@@ -72,21 +72,21 @@ function createFact(world, pred, hash, truth) -- det pred(hash) :- truth.
 		pred=serialize(pred)
 	end
 	if(nil==world) then 
-		return throw(MYC_ERR_UNDEFWORLD, pred, hash, " :- "..serialize(truth))
+		return throw(world, MYC_ERR_UNDEFWORLD, pred, hash, " :- "..serialize(truth))
 	else
 		if(nil==world[pred]) then
 			world[pred]={}
 			world[pred].det=true
 		end
 		if(world[pred].det ~= true) then
-			return throw(MYC_ERR_DETNONDET, pred, hash, " :- "..serialize(truth).."\t"..prettyPredID(pred).." is nondet")
+			return throw(world, MYC_ERR_DETNONDET, pred, hash, " :- "..serialize(truth).."\t"..prettyPredID(pred).." is nondet")
 		else
 			if(nil==world[pred].facts) then
 				world[pred].facts={}
 			end
 			if(nil~=world[pred].facts[hash]) then
 				if(not cmpTruth(world[pred].facts[hash], truth)) then
-					return throw(MYC_ERR_DETNONDET, pred, hash, " :- "..serialize(truth).."\told value is "..serialize(world[pred].facts[hash]))
+					return throw(world, MYC_ERR_DETNONDET, pred, hash, " :- "..serialize(truth).."\told value is "..serialize(world[pred].facts[hash]))
 				end
 			else
 				world[pred].facts[hash]=truth
@@ -101,14 +101,14 @@ function createDef(world, pred, preds, convs, op, det, literals) -- define a pre
 	debugPrint({"createDef", "world", pred, preds, convs, op, det})
 	pred=inflatePredID(pred)
 	local p
-	if(nil==world) then return throw(MYC_ERR_UNDEFWORLD, pred, {}, " :- "..serialize({op, preds, conv})) end
+	if(nil==world) then return throw(world, MYC_ERR_UNDEFWORLD, pred, {}, " :- "..serialize({op, preds, conv})) end
 	p=serialize(pred)
 	if(nil==world[p]) then
 		world[p]={}
 	end
 	if(nil==literals) then literals={} end
 	if(nil~=world[p].det and det~=world[p].det) then
-		return throw(MYC_ERR_DETNONDET, pred, {}, " :- "..serialize({op, preds, conv})) 
+		return throw(world, MYC_ERR_DETNONDET, pred, {}, " :- "..serialize({op, preds, conv})) 
 	else
 		world[p].det=det
 	end
@@ -213,9 +213,9 @@ function mainLoop(world)
 		s, ret=pcall(serialize, ret)
 		if(not s) then print(ret) print(debug.traceback()) return false end
 		print(ret)
-		if(MYCERR~=MYC_ERR_NOERR) then
-			construct_traceback("mainloop", "()")
-			print(pretty(MYCERR_STR))
+		if(world.MYCERR~=MYC_ERR_NOERR) then
+			construct_traceback(world, "mainloop", "()")
+			print(pretty(world.MYCERR_STR))
 			return false
 		end
 	end
@@ -231,6 +231,8 @@ function initMycroft(world)
 	require("mycParse")
 	require("mycPretty")
 	require("mycErr")
+	world.MYCERR=MYC_ERR_NOERR
+	world.MYCERR_STR=""
 	require("mycNet")
 	setupNetworking()
 	require("mycType")

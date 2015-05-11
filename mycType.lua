@@ -122,7 +122,7 @@ function unificationSetItem(world, itemName, value)
 				debugPrint(serialize(itemName)..":=\""..serialize(world.symbols[itemName]).."\"")
 				return value
 			elseif(world.symbols[itemName]~=value) then
-				throw(MYC_ERR_UNIF, "set/2", {itemName, value}, "\tCurrent value of "..serialize(itemName).." is "..serialize(world.symbols[itemName]))
+				throw(world, MYC_ERR_UNIF, "set/2", {itemName, value}, "\tCurrent value of "..serialize(itemName).." is "..serialize(world.symbols[itemName]))
 				return world.symbols[itemName]
 			end
 		else return itemName end

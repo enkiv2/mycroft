@@ -18,10 +18,6 @@ function testErr()
 	print("MYC_ERR_DETNONDET -> "..error_string(MYC_ERR_DETNONDET))
 	print("MYC_ERR_UNDEFWORLD -> "..error_string(MYC_ERR_UNDEFWORLD))
 	print("error_string(\"woah\") -> "..error_string("woah"))
-	print("failure/0 in nil world -> "..serialize(executePredicateNA(nil, "failure", {})))
-	print(MYCERR_STR)
-	MYCERR_STR=""
-	MYCERR=MYC_ERR_NOERR
 	print()
 end
 function testBool()

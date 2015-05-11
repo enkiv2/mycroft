@@ -87,7 +87,9 @@ function strWorld(world) -- return the code for all predicates as a string
 	debugPrint({"world:", world})
 	if(world~=nil) then 
 		for k,v in pairs(world) do
-			ret=ret..strDef(world, k)
+			if(k~="MYCERR" and k~="MYCERR_STR") then
+				ret=ret..strDef(world, k)
+			end
 		end
 	end
 	return "# State of the world\n"..ret
