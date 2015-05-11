@@ -136,7 +136,7 @@ end
 -- Helpers for internal lua types that are, incomprehensibly, missing them
 function invertPattern(pattern)
 	local ret=pattern
-	ret=string.gsub(ret, "^%[([^%^][^%]]*)%]$", function (c) return "[^"..c.."]" end )
+	ret=string.gsub(ret, "^%[([^%^][^%]]*)%]$", function (c) return "[^"..c.."]+" end )
 	ret=string.gsub(ret, "^%b()$", function(c) c=string.gsub(string.gsub(c, "%(", ""), "%)", "") return ".*)"..c.."(.*" end )
 	return ret
 end

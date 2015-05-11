@@ -470,3 +470,8 @@ helpText["runtests/0"]="Run the test suite"
 builtins["addpeer/2"]=function(world, address, port) table.insert(mycnet.peers, {address, tonumber(port)}) return YES end
 helpText["setport/1"]="setport(Port)\tset the listening port for peers to connect to"
 helpText["addpeer/2"]="addpeer(Address,Port)\tadd a peer with the specified info"
+
+defaultConfig=[[
+nondet open(FName, X) :- open(FName, r, X).
+nondet err(Msg) :- throw(3, Msg).
+]]

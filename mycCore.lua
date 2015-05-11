@@ -258,6 +258,8 @@ function initMycroft(world)
 		s,e = pcall(io.open, sep.."etc"..sep.."mycroftrc")
 		if(s and nil~=e) then
 			parseFile(world, e)
+		else
+			parseLines(world, defaultConfig)
 		end
 	end
 end

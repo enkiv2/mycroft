@@ -326,3 +326,9 @@ function parseFile(world, file)
 		line=file:read("*l")
 	end
 end
+function parseLines(world, str)
+	local l
+	for _,l in ipairs(string.split(str, "[\r\n]")) do
+		parseLine(world, l)
+	end
+end
