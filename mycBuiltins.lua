@@ -429,6 +429,38 @@ function initBuiltins()
 				return NO
 			end
 		end
+		
+		-- load/save state of the world
+		helpText['saveWorld/1']="saveWorld(FName) saves the state of the world to the file represented by FName."
+		builtins['saveWorld/1']=function(world, fname)
+			fname=unificationGetItem(fname)
+			local s,f = pcall(io.open, fname, 'w')
+			if(s) then
+				local e
+				s, e=pcall(io.write, f, strWorld(world))
+				if(s) then
+					s, e = pcall(io.close, f)
+					if(s) then
+						return YES
+					end
+				end
+				throw(MYC_ERR_USERERR, 'saveWorld', serialize({fname}), tostring(e))
+			else
+				throw(MYC_ERR_USERERR, 'saveWorld', serialize({fname}), tostring(f))
+			end
+			return NO
+		end
+		helpText['doFile/1']="doFile(FName) runs the predicates in the file represented by FName."
+		builtins['doFile/1']=function(world, fname)
+			fname=unificationGetItem(world, fname)
+			local s,f = pcall(io.open, fname, 'r')
+			if(s) then
+				parseFile(world, f)
+				io.close(f)
+			end
+			throw(MYC_ERR_USERERR, 'doFile', serialize({fname}), tostring(f))
+			return NO
+		end
 	end
 
 	if(paranoid) then 

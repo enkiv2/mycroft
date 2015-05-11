@@ -22,8 +22,8 @@ function executePredicatePA(world, p, args) -- execute p with the given arglist
 	hash=serialize(args)
 	ppid=prettyPredID(p)
 	debugPrint("Executing predicate: "..ppid..hash)
-	if(nil~=builtins[ppid]) then return builtins[ppid](world, unpack(args)) end
 	if(nil~=world) then
+		if(nil~=builtins[ppid]) then return builtins[ppid](world, unpack(args)) end
 		r=factExists(world, p, hash)
 		if(nil~=r) then return r end
 		r=world[ppid]
@@ -210,7 +210,7 @@ function mainLoop(world)
 		debugPrint("LINE: "..line)
 		print(pretty(serialize(parseLine(world, line))))
 		if(MYCERR~=MYC_ERR_NOERR) then
-			construct_traceback(MYCERR, "mainloop", {})
+			construct_traceback("mainloop", "()")
 			print(pretty(MYCERR_STR))
 			return false
 		end

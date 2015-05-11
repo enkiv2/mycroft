@@ -98,9 +98,11 @@ function main(argv)
 		local x=mainLoop(world)
 		while (x) do x=mainLoop(world) end
 	end
-	print(colorCode().."\n"..string.char(27).."[0J") -- unset the color and clear the screen from the cursor on down
 end
 
 
 
 main(arg)
+--local s,e = pcall(main, arg)
+--if(not s) then print(e)  end
+print(colorCode().."\n"..string.char(27).."[0J") -- unset the color and clear the screen from the cursor on down
