@@ -250,3 +250,15 @@ function initMycroft(world)
 		debugPrint("Could not find readline: "..tostring(e))
 	end
 end
+
+function exitClean(c)
+	if(jobCount) then
+		if(jobs) then
+			for _,j in ipairs(jobs) do
+				mycnet.forwardFact({}, '?- print("Master process closing; killing slave jobs."), exit().')
+			end
+		end
+	end
+	print(colorCode().."\n"..string.char(27).."[0J") -- unset the color and clear the screen from the cursor on down
+	os.exit(c)
+end

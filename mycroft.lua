@@ -70,13 +70,15 @@ function main(argv)
 				nextLP=false
 			elseif(nextJ) then
 				nextJ=false
-				local jobCount=tonumber(arg)
+				jobCount=tonumber(arg)
+				jobs={}
 				if(jobCount~=nil) then
 					local i
 					local chunk=""
 					for i=1,jobCount do
 						chunk=chunk.." -P 127.0.0.1 "..tostring(port+i)
 						table.insert(peers, {"127.0.0.1", port+i})
+						table.insert(jobs, {"127.0.0.1", port+i})
 					end
 					for i=1,jobCount do
 						os.execute("mycroft -d -l "..tostring(port+i)..chunk.." > _mycroft_log_"..tostring(port+i).." &")
@@ -185,7 +187,7 @@ function main(argv)
 		coroutine.resume(mainCoroutine)
 		coroutine.resume(listenCoroutine)
 	end
-	print(colorCode().."\n"..string.char(27).."[0J") -- unset the color and clear the screen from the cursor on down
+	exitClean(0)
 end
 
 

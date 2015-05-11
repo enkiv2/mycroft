@@ -116,9 +116,9 @@ builtins["pprint/1"]=function(world, c) print(pretty(serialize(c))) return YES e
 helpText["pprint/1"]=[[pprint(X) will print the syntax-highlighted value of X to stdout, followed by a newline]]
 builtins["pputs/1"]=function(world,c) io.write(pretty(serialize(c))) return YES end
 helpText["pputs/1"]=[[pprint(X) will print the syntax-highlighted value of X to stdout]]
-builtins["exit/0"]=function(world) os.exit() end
+builtins["exit/0"]=function(world) exitClean(0) end
 helpText["exit/0"]="exit/0\texit interpreter with no error\nexit(X)\texit with error code X"
-builtins["exit/1"]=function(world, c) os.exit(c) end
+builtins["exit/1"]=function(world, c) exitClean(c) end
 helpText["exit/1"]=helpText["exit/0"]
 
 -- pretty-printing/introspection functions
