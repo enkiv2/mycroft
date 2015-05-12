@@ -497,11 +497,17 @@ helpText["banner/0"]=helpText["banner"]
 builtins["banner/0"]=function(world) print(helpText["banner"]) return YES end
 builtins["runtests/0"]=function(world) test() return YES end
 helpText["runtests/0"]="Run the test suite"
+
+-- forwarding-related
 builtins["addpeer/2"]=function(world, address, port) table.insert(mycnet.peers, {address, tonumber(port)}) return YES end
 helpText["setport/1"]="setport(Port)\tset the listening port for peers to connect to"
 helpText["addpeer/2"]="addpeer(Address,Port)\tadd a peer with the specified info"
 helpText["setForwarding/1"]="set query forwarding"
 builtins["setForwarding/1"]=function(world, x) x=unificationGetItem(world, x) if(cmpTruth(x, YES)) then forwardQueries=true return YES end forwardQueries=NO return YES end
+helpText["forward/1"]="forward(Line) forwards the code in Line to the current peer\nforwardAll(Line) forwards the code in Line to all peers"
+helpText["forwardAll/1"]=helpText["forward/1"]
+builtins["forward/1"]=function(world, l) l=unificationGetItem(world, l) return parseItem(mycnet.forwardRequest(world, l)) end
+builtins["forwardAll/1"]=function(world, l) l=unificationGetItem(world, l) mycnet.forwardFact(world, l) return YES end
 
 defaultConfig=[[
 nondet open(FName, X) :- open(FName, r, X).
