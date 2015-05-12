@@ -475,17 +475,23 @@ builtins["help/0"]=function(world) print(pretty(help)) return YES end
 helpText["help/0"]="print general help message"
 helpText["help/1"]="help(X)\tprint help with topic X. See help/0 for details."
 helpText[""]=help
+helpText["sethelp/2"]="help(Topic, Message) sets the help information for Topic to Message"
 helpText["copying"]=copying
 helpText["syntax"]=syntaxHelp
 helpText["version"]=tostring(version)
 builtins["help/1"]=function(world,c) 
-	c=serialize(c)
+	c=serialize(unificationGetItem(world, c))
 	if(nil~=helpText[c]) then print(pretty(helpText[c]))
 	else 
 		print(pretty("No help available for "..serialize(c)))
 		return NO
 	end 
 return YES end
+builtins["sethelp/2"]=function(world, x, y) 
+	x=serialize(unificationGetItem(world, x))
+	y=serialize(unificationGetItem(world, y))
+	helpText[x]=y
+end
 builtins["copying/0"]=function(world) print(builtins["copying"]) end
 helpText["copying/0"]=helpText["copying"]
 helpText["banner"]=banner
