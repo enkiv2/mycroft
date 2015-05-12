@@ -89,7 +89,7 @@ function parseBodyComponents(world, body, defSem, argList)
 				local parsedArgs=parseArgs(world, pargs, defSem, argList)
 				table.insert(items, {pred=createPredID(pname, #parsedArgs), conv=genCorrespondences(argList, parsedArgs)})
 			else
-				table.insert(items, executePredicateNA(world, pname, parseArgs(world, pargs, defSem, argList)))
+				table.insert(items, function() return executePredicateNA(world, pname, parseArgs(world, pargs, defSem, argList)) end )
 			end
 			return ""
 		end), "(%b<>)", function(c) 
@@ -103,7 +103,11 @@ function parseBodyComponents(world, body, defSem, argList)
 			table.insert(items, x)
 		end), "([^,]+)", function(c) 
 			local x=parseItem(world, c, defSem, argList) 
+			if(type(x)==string) then
+				x=string.gsub(string.gsub(x, "^ *", ""), " *$", "")
+			end
 			table.insert(items, x)
+			if("!"==x) then return items end
 		end)
 	return items
 end
@@ -213,7 +217,15 @@ end
 
 function parseAndComponent(world, andComponent, andTBL, defSem, arglist) -- Parse and handle the AND component of a predicate, interpreter semantics
 	for i,v in ipairs(parseBodyComponents(world, andComponent, defSem, arglist)) do
+		if(type(v)=="string") then 
+			v=string.gsub(string.gsub(v, "^ +", ""), " +$", "")
+			debugPrint("string value: \""..v.."\"")
+		end
+		if(type(v)=="function") then
+			v=v()
+		end
 		table.insert(andTBL, v)
+		if("!"==v) then debugPrint("found cut") return "" end
 	end
 	return ""
 end
@@ -272,6 +284,7 @@ function parseOrComponent(world, orComponent, orTBL, defSem, arglist, pred, det)
 			head=andTBL[1]
 			table.remove(andTBL, 1)
 			for i,v in ipairs(andTBL) do
+				if("!"==v) then debugPrint("found cut") table.insert(orTBL, head) table.insert(orTBL, "!") return "" end
 				head=performPLBoolean(head, v, "and")
 			end
 		end
@@ -307,7 +320,20 @@ function parseLine(world, line) -- Hand a line off to the interpreter
 				table.remove(orTBL,1)
 			end
 			for i,v in ipairs(orTBL) do
-				head=performPLBoolean(head,v,"or")
+				if("!"==v) then
+					debugPrint("found cut")
+					local oldhead=head
+					if(not cmpTruth(head, NO)) then
+						if(not cmpTruth(head, NC)) then
+							debugPrint({"head", head})
+							return serialize(head)
+						end
+					end
+					head=orTBL[i+1]
+					if(not head) then head=oldhead debugPrint({"head", head}) return oldhead  end
+				else
+					head=performPLBoolean(head,v,"or")
+				end
 			end 
 			return serialize(head)
 		end
