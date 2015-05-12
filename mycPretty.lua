@@ -11,6 +11,7 @@ function serialize(args) -- serialize in Mycroft syntax
 		ret=string.gsub(ret, string.char(129), ")")
 		ret=string.gsub(ret, string.char(130), "<")
 		ret=string.gsub(ret, string.char(131), ">")
+		ret=string.gsub(ret, string.char(132), "!")
 		ret=string.gsub(ret, "([^ ]+)", function(q) 
 			if ("\\Y\\E\\S"==q) then return "YES" 
 			elseif("\\N\\O"==q) then return "NO" 
@@ -40,6 +41,7 @@ function serialize(args) -- serialize in Mycroft syntax
 	end
 	ret="("
 	sep=""
+	local lastK=0
 	for k,v in ipairs(args) do
 		ret=ret..sep
 		if(type(v)=="table") then
@@ -54,6 +56,7 @@ function serialize(args) -- serialize in Mycroft syntax
 			ret=ret..tostring(v)
 		end
 		sep=","
+		lastK=k
 	end
 	for k,v in pairs(args) do
 		if(type(k)~="number") then
@@ -66,6 +69,8 @@ function serialize(args) -- serialize in Mycroft syntax
 				ret=ret..tostring(v)
 			end
 			sep=","
+		elseif(k>lastK) then
+			ret=ret..sep..tostring(k).."="..serialize(v)
 		end
 	end
 	return ret..")"

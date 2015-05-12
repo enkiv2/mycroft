@@ -1,5 +1,5 @@
 -- Parsing functions (WIP)
-
+lastChunkSize={}
 --definition semantics (WIP)
 function parseAnd(world, line) -- parse and handle the AND portion of a fact in definition semantics
 	local t
@@ -79,36 +79,94 @@ function parsePred(world, det, pname, pargs, pdef) -- parse a predicate definiti
 	return ""
 end
 
-function parseBodyComponents(world, body, defSem, argList) 
+function parseBodyComponents(world, body, defSem, argList, offset) 
 	local items={}
-	debugPrint("parseBodyComponents defSem="..tostring(defSem).." body="..body)
-	string.gsub(string.gsub(string.gsub(string.gsub(string.gsub(body, " *(%w+) *(%b()) *", 
-		function (pname, pargs) 
+	local leftOff
+	table.insert(lastChunkSize,#body)
+	if(string.find(body, "^ *$")~=nil) then return "" end
+	debugPrint("parseBodyComponents defSem="..tostring(defSem).." body="..body.." offset="..tostring(offset))
+	body=string.gsub(body, "(%b\"\")", function(c)
+			debugPrint("escaping string in parseBodyComponents: "..c)
+			return escapeStrings(world, c)
+		end)
+	debugPrint({"items", items, "body", body})
+	leftOff=1
+	body=string.gsub(body, "!", 
+		function(c) 
+			leftOff=string.find(body, c)
+			table.insert(items,leftOff+offset,"!")
+			debugPrint("found cut in parseBodyComponents")
+			return string.rep(" ", #c)
+		end)
+	debugPrint({"items", items, "body", body})
+	leftOff=1
+	body=string.gsub(body, "(%w+)( *)(%b())", function (pname, spc, pargs) 
+			leftOff=string.find(body, pname.." *%b()", leftOff)
+			local pos=leftOff+offset
+			while(items[pos]) do
+				debugPrint({pos, items[pos]})
+				pos=pos+1
+			end
 			if(defSem) then
 				debugPrint("defining against "..pname..pargs)
 				local parsedArgs=parseArgs(world, pargs, defSem, argList)
-				table.insert(items, {pred=createPredID(pname, #parsedArgs), conv=genCorrespondences(argList, parsedArgs)})
+				table.insert(items,pos,{pred=createPredID(pname, #parsedArgs), conv=genCorrespondences(argList, parsedArgs)})
+				debugPrint({"items", items, "body", body, "leftoff", leftOff, "offset", offset,"tableOffset", leftOff+offset, items[leftOff+offset]})
 			else
-				table.insert(items, function() return executePredicateNA(world, pname, parseArgs(world, pargs, defSem, argList)) end )
+				table.insert(items,pos,function() return executePredicateNA(world, pname, parseArgs(world, pargs, defSem, argList)) end)
 			end
-			return ""
-		end), "(%b<>)", function(c) 
-			local x=parseItem(world, c, defSem, argList) 
-			table.insert(items, x)
-		end), "(%b<|)", function(c) 
-			local x=parseItem(world, c, defSem, argList) 
-			table.insert(items, x)
-		end), "(%b|>)", function(c) 
-			local x=parseItem(world, c, defSem, argList) 
-			table.insert(items, x)
-		end), "([^,]+)", function(c) 
-			local x=parseItem(world, c, defSem, argList) 
-			if(type(x)==string) then
-				x=string.gsub(string.gsub(x, "^ *", ""), " *$", "")
-			end
-			table.insert(items, x)
-			if("!"==x) then return items end
+			debugPrint({"body size", #body, "psize", #pname+#spc+#pargs})
+			return string.rep(" ", #body)
 		end)
+	debugPrint({"items", items, "body", body})
+	leftOff=1
+	body=string.gsub(body, "(%b<>)", function(c) 
+			local x=parseItem(world, c, defSem, argList) 
+			leftOff=string.find(body, c)
+			local pos=leftOff+offset
+			while(items[pos]) do
+				pos=pos+1
+			end
+			table.insert(items,pos,x)
+			return string.rep(" ", #c)
+		end)
+	debugPrint({"items", items, "body", body})
+	leftOff=1
+	body=string.gsub(body, "(%b<|)", function(c) 
+			local x=parseItem(world, c, defSem, argList) 
+			leftOff=string.find(body, c)
+			local pos=leftOff+offset
+			while(items[pos]) do
+				pos=pos+1
+			end
+			table.insert(items,pos,x)
+			return string.rep(" ", #c)
+		end)
+	debugPrint({"items", items, "body", body})
+	leftOff=1
+	body=string.gsub(body, "(%b|>)", function(c) 
+			local x=parseItem(world, c, defSem, argList) 
+			leftOff=string.find(body, c)
+			local pos=leftOff+offset
+			while(items[pos]) do
+				pos=pos+1
+			end
+			table.insert(items,pos,x)
+			return string.rep(" ", #c)
+		end)
+	debugPrint({"items", items, "body", body})
+	leftOff=1
+	body=string.gsub(body, "( *)([^, ]+)( *)", function(a, c, b) 
+			local x=parseItem(world, c, defSem, argList) 
+			leftOff=string.find(body, c)
+			local pos=leftOff+offset
+			while(items[pos]) do
+				pos=pos+1
+			end
+			table.insert(items, pos, x)
+			return string.rep(" ", #c+#a+#b)
+		end)
+	debugPrint({"items", items, "body", body})
 	return items
 end
 
@@ -150,6 +208,7 @@ function escapeStrings(world, pargs)
 			ret2=string.gsub(ret2, "%)", string.char(129))
 			ret2=string.gsub(ret2, "<", string.char(130))
 			ret2=string.gsub(ret2, ">", string.char(131))
+			ret2=string.gsub(ret2, "!", string.char(132))
 			return string.gsub(ret2, "(%w+)", function(q) 
 				if("YES"==q) then 
 					return "\\Y\\E\\S" 
@@ -215,19 +274,22 @@ function parsePredCall(world, pname, pargs, defSem, argList)
 	return {createPredID(pname, #args), args}
 end
 
-function parseAndComponent(world, andComponent, andTBL, defSem, arglist) -- Parse and handle the AND component of a predicate, interpreter semantics
-	for i,v in ipairs(parseBodyComponents(world, andComponent, defSem, arglist)) do
-		if(type(v)=="string") then 
-			v=string.gsub(string.gsub(v, "^ +", ""), " +$", "")
-			debugPrint("string value: \""..v.."\"")
+function parseAndComponent(world, andComponent, andTBL, defSem, arglist, offset) -- Parse and handle the AND component of a predicate, interpreter semantics
+	for i,v in pairs(parseBodyComponents(world, andComponent, defSem, arglist, offset)) do
+		debugPrint({i, v})
+		if(type(v)=="string") then
+			if(string.find(v, "^ *$")==nil) then 
+				debugPrint("not blank")
+				v=string.gsub(string.gsub(v, "^ +", ""), " +$", "")
+				debugPrint("string value: \""..v.."\"")
+				if("!"==v) then debugPrint("found cut") table.insert(andTBL, offset+i,  v) return "" end
+			end
 		end
-		if(type(v)=="function") then
-			v=v()
-		end
-		table.insert(andTBL, v)
-		if("!"==v) then debugPrint("found cut") return "" end
+		debugPrint({"andTBL", andTBL, "idx", offset+i, "v", v})
+		table.insert(andTBL, offset+i, v)
 	end
-	return ""
+	local ret=string.rep(" ", lastChunkSize[1])
+	return ret
 end
 
 function evertPredTbl(t, world)
@@ -236,7 +298,27 @@ function evertPredTbl(t, world)
 	ret.convs={}
 	local i, item
 	debugPrint("table to be everted: "..serialize(t))
-	for _,i in ipairs(t) do
+	local j,k
+	local keys={}
+	for j,_ in pairs(t) do
+		table.insert(keys, j)
+	end
+	debugPrint(keys)
+	table.sort(keys)
+	debugPrint(keys)
+	for _,j in ipairs(keys) do
+		i=t[j]
+		debugPrint({"everting item", i})
+		if(type(i)=="function") then
+			i=i()
+			table.insert(ret, i)
+		end
+		if(type(i)=="string") then
+			if("!"==i) then 
+				table.insert(ret, "!")
+				return ret
+			end
+		end
 		if(i.pred) then table.insert(ret.preds, i.pred) end
 		if(i.conv) then table.insert(ret.convs, i.conv) end
 		if(i.preds) then for _,item in i.preds do table.insert(ret.preds, item) end end
@@ -266,24 +348,73 @@ end
 
 function parseOrComponent(world, orComponent, orTBL, defSem, arglist, pred, det) -- Parse and handle the OR component of a predicate, interpreter semantics
 	local andTBL={}
-	string.gsub(string.gsub(string.gsub(
-		string.gsub(orComponent, "(.*)%) *,", 
-			function(andComponent) return parseAndComponent(world, andComponent..")", andTBL, defSem, arglist) end
-			), " *(%w+) *(%b()) *", function(pfx,sfx) return parseAndComponent(world, pfx..sfx, andTBL, defSem, arglist) end
-			), " *([<|][0-9., ]+[>|]) *", function(andComponent) return parseAndComponent(world, andComponent, andTBL, defSem, arglist) end
-		),  "([^,]+),?",
-			function(andComponent) return parseAndComponent(world, andComponent, andTBL, defSem, arglist) end)
+	local offFix=#orComponent
+	debugPrint({"lastChunkSize", lastChunkSize})
+	debugPrint("before paren")
+	orComponent=string.gsub(orComponent, "(.*)%)( *),", 
+			function(andComponent, x) 
+				debugPrint("component: "..andComponent)
+				local offset=string.find(orComponent, "(.*)%) *,")
+				parseAndComponent(world, andComponent..")", andTBL, defSem, arglist, offset)
+				return string.rep(" ", #andComponent+#x)
+			end)
+	if(#orComponent<offFix) then
+		orComponent=string.rep(" ", (offFix-#orComponent))..orComponent
+	end
+	debugPrint({"lastChunkSize", lastChunkSize, "body", orComponent})
+	debugPrint("pred")
+	orComponent=string.gsub(orComponent, "(%w+ *%b())", 
+			function(c) 
+				local offset=string.find(orComponent, "(%w+) *%b()")
+				parseAndComponent(world, c, andTBL, defSem, arglist, offset)
+				return string.rep(" ", #c)
+			end)
+	if(#orComponent<offFix) then
+		orComponent=string.rep(" ", (offFix-#orComponent))..orComponent
+	end
+	debugPrint({"andTBL", andTBL})
+	debugPrint({"lastChunkSize", lastChunkSize, "body", orComponent})
+	debugPrint("truth")
+	orComponent=string.gsub(orComponent, "([<|][0-9., ]+[>|])", 
+			function(andComponent) 
+				local offset=string.find(orComponent, "[<|][0-9., ]+[>|]") 
+				parseAndComponent(world, andComponent, andTBL, defSem, arglist, offset) 
+				return string.rep(" ", #andComponent)
+			end)
+	if(#orComponent<offFix) then
+		orComponent=string.rep(" ", (offFix-#orComponent))..orComponent
+	end
+	debugPrint({"lastChunkSize", lastChunkSize, "body", orComponent})
+	debugPrint({"andTBL", andTBL})
+	debugPrint("atom")
+	orComponent=string.gsub(orComponent,  "([^,]+),?",
+			function(andComponent) 
+				if(string.find(andComponent, "^ *$")==nil and #andComponent>0) then 
+					local offset=string.find(orComponent, "([^,]+),?")
+					debugPrint({"not blank", andComponent})
+					parseAndComponent(world, andComponent, andTBL, defSem, arglist, offset) 
+					return string.rep(" ", #andComponent)
+				end
+				return andComponent
+			end)
+	debugPrint({"lastChunkSize", lastChunkSize})
+	debugPrint({"andTBL", andTBL})
 	local head=NO
-	debugPrint("parseOrComponent")
-	if(#andTBL>0) then
+	debugPrint("parseOrComponent defSem="..tostring(defSem).." andTBL="..serialize(andTBL))
+	andTBL=evertPredTbl(andTBL, world)
+	local count=0
+	for _,_ in pairs(andTBL) do
+		count=count+1
+	end
+	if(count>0) then
 		if(defSem) then
-			local predTbl=evertPredTbl(andTBL, world)
+			local predTbl=andTBL
 			debugPrint({"Everted pred tbl: ", predTbl})
 			head=createAnonDef(world, #arglist, predTbl.preds, predTbl.convs, "and", det)
 		else
 			head=andTBL[1]
 			table.remove(andTBL, 1)
-			for i,v in ipairs(andTBL) do
+			for i,v in pairs(andTBL) do
 				if("!"==v) then debugPrint("found cut") table.insert(orTBL, head) table.insert(orTBL, "!") return "" end
 				head=performPLBoolean(head, v, "and")
 			end
@@ -319,7 +450,7 @@ function parseLine(world, line) -- Hand a line off to the interpreter
 				head=orTBL[1]
 				table.remove(orTBL,1)
 			end
-			for i,v in ipairs(orTBL) do
+			for i,v in pairs(orTBL) do
 				if("!"==v) then
 					debugPrint("found cut")
 					local oldhead=head
@@ -330,7 +461,7 @@ function parseLine(world, line) -- Hand a line off to the interpreter
 						end
 					end
 					head=orTBL[i+1]
-					if(not head) then head=oldhead debugPrint({"head", head}) return oldhead  end
+					if(not head) then head=oldhead return serialize(oldhead)  end
 				else
 					head=performPLBoolean(head,v,"or")
 				end
