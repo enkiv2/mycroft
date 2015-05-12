@@ -26,6 +26,11 @@ function executePredicatePA(world, p, args) -- execute p with the given arglist
 		if(nil~=builtins[ppid]) then return builtins[ppid](world, unpack(args)) end
 		r=factExists(world, p, hash)
 		if(nil~=r) then return r end
+		if(forwardQueries) then
+			ret=mycnet.forwardRequest(world, "?- "..p.name..hash..".")
+			if(ret~=nil) then ret=canonicalizeCTV(parseTruth(ret)) end
+			if(ret~=nil and not cmpTruth(ret, NC)) then return ret end
+		end
 		r=world[ppid]
 		if(nil==r) then return NC end
 		det=r.det

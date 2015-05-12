@@ -298,11 +298,6 @@ function parseLine(world, line) -- Hand a line off to the interpreter
 		"^%?%- *(.+) *%.$", 
 		function (body)
 			debugPrint("query: "..body) 
-			if(forwardQueries) then
-				local ret=mycnet.forwardRequest(world, "?- "..body..".")
-				if(ret~=nil) then ret=canonicalizeCTV(parseTruth(ret)) end
-				if(ret~=nil and not cmpTruth(ret, NC)) then return ret end
-			end
 			local orTBL={}
 			string.gsub(body, "([^;]+)", 
 				function(orComponent) return parseOrComponent(world, orComponent, orTBL) end)
