@@ -1,32 +1,7 @@
--- Parsing functions (WIP)
+-- Parsing functions
 lastChunkSize={}
---definition semantics (WIP)
-function parseAnd(world, line) -- parse and handle the AND portion of a fact in definition semantics
-	local t
-	t={}
-	print(line)
-	string.gsub(
-		string.gsub(line, "(%w+) *%b()", 
-			function (p, a) 
-				local s=parsePredCall(world, p, a) 
-				table.insert(t, s) 
-				return "" 
-			end), "([^,]+)", 
-		function (l) 
-			local s=parseItem(world, l)
-			table.insert(t, s)
-			return "" 
-		end)
-	return t
-end
 
-function parseOr(world, line) -- parse and handle the OR portion of a fact in definition semantics
-	local t
-	t={}
-	string.gsub(line, "([^;]+)", function (l) table.insert(t, parseAnd(world, l)) return "" end )
-	return t
-end
-
+--definition semantics
 function genCorrespondences(x, y) -- given a pair of arg lists, produce correspondences between them
 	local ret, i, j, k, l
 	ret={{}, {}, {}}
@@ -71,6 +46,7 @@ function parsePred(world, det, pname, pargs, pdef) -- parse a predicate definiti
 	return ""
 end
 
+-- shared (definition & interpreter semantics)
 function parseBodyComponents(world, body, defSem, argList, offset) 
 	local items={}
 	local leftOff
@@ -149,7 +125,6 @@ function parseBodyComponents(world, body, defSem, argList, offset)
 end
 
 
--- Interpreter semantics
 function parseTruth(x, defSem, argList) -- handle the various representations of composite truth values
 	local tr
 	string.gsub(string.gsub(string.gsub(string.gsub(x, 
