@@ -66,7 +66,7 @@ function parsePred(world, det, pname, pargs, pdef) -- parse a predicate definiti
 	local orTBL={}
 	string.gsub(pdef, "([^;]+)", 
 		function(orComponent) return parseOrComponent(world, orComponent, orTBL, true, args, pname, isDet) end)
-	orTBL=evertPredTbl(orTBL, world)
+	orTBL=evertPredTbl(orTBL, world, true)
 	local head=createDef(world, pred, orTBL.preds, orTBL.convs, "or", isDet)
 	return ""
 end
@@ -264,7 +264,7 @@ function parseAndComponent(world, andComponent, andTBL, defSem, arglist, offset)
 	return ret
 end
 
-function evertPredTbl(t, world)
+function evertPredTbl(t, world, defSem)
 	local ret={}
 	ret.preds={}
 	ret.convs={}
@@ -279,7 +279,6 @@ function evertPredTbl(t, world)
 		i=t[j]
 		if(type(i)=="function") then
 			i=i()
-			table.insert(ret, i)
 		end
 		if(type(i)=="string") then
 			if("!"==i) then 
@@ -305,18 +304,22 @@ function evertPredTbl(t, world)
 				if(i.truth~=nil and i.confidence~=nil) then
 					tr=i
 				end
-				if(cmpTruth(tr, YES)) then
-					table.insert(ret.preds, createPredID("true", 0))
-					table.insert(ret.convs, genCorrespondences({}, {}))
-				elseif(cmpTruth(tr, NO)) then
-					table.insert(ret.preds, createPredID("false", 0))
-					table.insert(ret.convs, genCorrespondences({}, {}))
-				elseif(cmpTruth(tr, NC)) then
-					table.insert(ret.preds, createPredID("nc", 0))
-					table.insert(ret.convs, genCorrespondences({}, {}))
+				if(detSem) then 
+					if(cmpTruth(tr, YES)) then
+						table.insert(ret.preds, createPredID("true", 0))
+						table.insert(ret.convs, genCorrespondences({}, {}))
+					elseif(cmpTruth(tr, NO)) then
+						table.insert(ret.preds, createPredID("false", 0))
+						table.insert(ret.convs, genCorrespondences({}, {}))
+					elseif(cmpTruth(tr, NC)) then
+						table.insert(ret.preds, createPredID("nc", 0))
+						table.insert(ret.convs, genCorrespondences({}, {}))
+					else
+						table.insert(ret.preds, createAnonFact(world, 0, "()", tr))
+						table.insert(ret.convs, genCorrespondences({}, {}))
+					end
 				else
-					table.insert(ret.preds, createAnonFact(world, 0, "()", tr))
-					table.insert(ret.convs, genCorrespondences({}, {}))
+					table.insert(ret, tr)
 				end
 			end
 		end
@@ -364,11 +367,12 @@ function parseOrComponent(world, orComponent, orTBL, defSem, arglist, pred, det)
 				return andComponent
 			end)
 	local head=NO
-	andTBL=evertPredTbl(andTBL, world)
+	andTBL=evertPredTbl(andTBL, world, defSem)
 	local count=0
 	for _,_ in pairs(andTBL) do
 		count=count+1
 	end
+	debugPrint({"andTBL", andTBL})
 	if(count>0) then
 		if(defSem) then
 			local predTbl=andTBL
@@ -378,7 +382,9 @@ function parseOrComponent(world, orComponent, orTBL, defSem, arglist, pred, det)
 			table.remove(andTBL, 1)
 			for i,v in pairs(andTBL) do
 				if("!"==v) then debugPrint("found cut") table.insert(orTBL, head) table.insert(orTBL, "!") return "" end
-				head=performPLBoolean(head, v, "and")
+				if(i~="preds" and i~="convs") then
+					head=performPLBoolean(head, v, "and")
+				end
 			end
 		end
 	end
@@ -406,13 +412,20 @@ function parseLine(world, line) -- Hand a line off to the interpreter
 			debugPrint("query: "..body) 
 			local orTBL={}
 			string.gsub(body, "([^;]+)", 
-				function(orComponent) return parseOrComponent(world, orComponent, orTBL) end)
+				function(orComponent) return parseOrComponent(world, orComponent, orTBL, false, {}) end)
 			local head=NC
-			if(#orTBL>0) then
+			local count=0
+			for _,_ in pairs(orTBL) do
+				count=count+1
+			end
+			debugPrint({"orTBL", orTBL})
+			if(count>0) then
 				head=orTBL[1]
 				table.remove(orTBL,1)
 			end
+			debugPrint({"count", count, "head", head})
 			for i,v in pairs(orTBL) do
+				debugPrint({"v", v, "head", head})
 				if("!"==v) then
 					local oldhead=head
 					if(not cmpTruth(head, NO)) then

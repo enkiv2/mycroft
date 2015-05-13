@@ -491,6 +491,7 @@ builtins["sethelp/2"]=function(world, x, y)
 	x=serialize(unificationGetItem(world, x))
 	y=serialize(unificationGetItem(world, y))
 	helpText[x]=y
+	return YES
 end
 builtins["copying/0"]=function(world) print(builtins["copying"]) end
 helpText["copying/0"]=helpText["copying"]

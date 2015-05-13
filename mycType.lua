@@ -26,13 +26,14 @@ function translateArgList(list, conv, literals) -- given an arglist and a conver
 		end
 	end
 	for i,j in ipairs(conv[3]) do
-		l[i]=conv[3][i]
+		if(i<=#conv[2]) then 
+			l[i]=conv[3][i]
+		end
 	end
 	for i,j in ipairs(literals) do
-		l[i]=literals[i]
-	end
-	for i,j in ipairs(l) do
-		if(i>#conv[2]) then l[i]=nil end
+		if(i<=#conv[2]) then 
+			l[i]=literals[i]
+		end
 	end
 	return l
 end
