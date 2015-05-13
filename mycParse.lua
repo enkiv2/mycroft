@@ -338,8 +338,19 @@ function evertPredTbl(t, world)
 				if(i.truth~=nil and i.confidence~=nil) then
 					tr=i
 				end
-				table.insert(ret.preds, createAnonFact(world, 0, "()", tr))
-				table.insert(ret.convs, genCorrespondences({}, {}))
+				if(cmpTruth(tr, YES)) then
+					table.insert(ret.preds, createPredID("true", 0))
+					table.insert(ret.convs, genCorrespondences({}, {}))
+				elseif(cmpTruth(tr, NO)) then
+					table.insert(ret.preds, createPredID("false", 0))
+					table.insert(ret.convs, genCorrespondences({}, {}))
+				elseif(cmpTruth(tr, NC)) then
+					table.insert(ret.preds, createPredID("nc", 0))
+					table.insert(ret.convs, genCorrespondences({}, {}))
+				else
+					table.insert(ret.preds, createAnonFact(world, 0, "()", tr))
+					table.insert(ret.convs, genCorrespondences({}, {}))
+				end
 			end
 		end
 	end
