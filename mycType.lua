@@ -34,7 +34,6 @@ function translateArgList(list, conv, literals) -- given an arglist and a conver
 	for i,j in ipairs(l) do
 		if(i>#conv[2]) then l[i]=nil end
 	end
-	debugPrint({"translation of", list, "by", conv, "is", l})
 	return l
 end
 
@@ -84,7 +83,7 @@ end
 function inflatePredID(p)
 	local t=nil
 	if(type(p)=="table") then return p end
-	string.gsub(p, "(%w+)/(%d+)", function(pname, parity) debugPrint("pname: "..pname..", arity: "..parity) t={name=pname, arity=tonumber(parity)} end )
+	string.gsub(p, "(%w+)/(%d+)", function(pname, parity) t={name=pname, arity=tonumber(parity)} end )
 	if(t) then return t end
 	return p
 end

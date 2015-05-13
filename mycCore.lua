@@ -17,8 +17,6 @@ end
 
 function executePredicatePA(world, p, args) -- execute p with the given arglist
 	local ret, det, r, hash, ppid
-	debugPrint("executePredicatePA(world, "..serialize(p)..", "..serialize(args)..")")
-	debugPrint(strWorld(world))
 	hash=serialize(args)
 	ppid=prettyPredID(p)
 	debugPrint("Executing predicate: "..ppid..hash)
@@ -98,7 +96,6 @@ function createFact(world, pred, hash, truth) -- det pred(hash) :- truth.
 			end		
 		end
 	end
-	debugPrint(strWorld(world))
 	return inflatePredID(pred)
 end
 
@@ -167,7 +164,6 @@ function createDef(world, pred, preds, convs, op, det, literals) -- define a pre
 		world[p].def.children[1]=preds
 		world[p].def.correspondences[1]=convs
 	end 
-	debugPrint(strWorld(world))
 	return inflatePredID(pred)
 end
 
