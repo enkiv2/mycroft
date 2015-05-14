@@ -22,6 +22,10 @@ function executePredicatePA(world, p, args) -- execute p with the given arglist
 	debugPrint("Executing predicate: "..ppid..hash)
 	if(nil~=world) then
 		if(nil~=builtins[ppid]) then return builtins[ppid](world, unpack(args)) end
+		if(nil~=world.aliases[ppid]) then 
+			ppid=world.aliases[ppid]
+			p=inflatePredID(ppid)
+		end
 		r=factExists(world, p, hash)
 		if(nil~=r) then return r end
 		if(forwardQueries) then
@@ -132,17 +136,54 @@ function createDef(world, pred, preds, convs, op, det, literals) -- define a pre
 		preds=inflatePredID(preds)
 	end
 	if(type(preds)=="table" and nil==preds.name) then
-		if(#preds==1) then return createDef(world, pred, preds[1], convs[1], op, det) end
+		if(#preds==1) then 
+			local i,j,same
+			same=true
+			for i,j in ipairs(convs[1][2]) do
+				if(convs[1][1][i]~=j or convs[1][3][i]) then
+					same=false
+				end
+			end
+			if(same) then 
+				world.aliases[p]=serialize(preds[1]) 
+				return inflatePredID(world.aliases[p])
+			else
+				return createDef(world, pred, preds[1], convs[1], op, det) 
+			end
+		end
 		if(#preds==2) then
-			preds[1]=inflatePredID(preds[1])
-			preds[2]=inflatePredID(preds[2])
-			world[p].def.children[1]=preds[1]
-			world[p].def.children[2]=preds[2]
-			world[p].def.correspondences[1]=convs[1]
-			world[p].def.correspondences[2]=convs[2]
-			world[p].def.literals[1]=literals[1]
-			world[p].def.literals[2]=literals[2]
-			world[p].def.op=op
+			local i,j,same
+			same=nil
+			for i,j in pairs(world) do
+				if(not same and type(j)=="table" and i~="symbols" and i~=aliases and i~=p) then 
+					if(j.def) then
+						if(op==j.def.op) then
+							if(serialize(j.def.children)==serialize(preds)) then
+								if(serialize(j.def.correspondences)==serialize(convs)) then
+									if(serialize(j.def.literals)==serialize(literals)) then
+										same=i
+									end
+								end
+							end
+						end
+					end
+				end
+			end
+			if(same) then
+				world.aliases[p]=same
+				world[p]=nil
+				return inflatePredID(same)
+			else
+				preds[1]=inflatePredID(preds[1])
+				preds[2]=inflatePredID(preds[2])
+				world[p].def.children[1]=preds[1]
+				world[p].def.children[2]=preds[2]
+				world[p].def.correspondences[1]=convs[1]
+				world[p].def.correspondences[2]=convs[2]
+				world[p].def.literals[1]=literals[1]
+				world[p].def.literals[2]=literals[2]
+				world[p].def.op=op
+			end
 		else
 			local preds_head=preds[#preds]
 			table.remove(preds, #preds)

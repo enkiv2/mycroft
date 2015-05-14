@@ -91,8 +91,12 @@ function strWorld(world) -- return the code for all predicates as a string
 	ret=""
 	debugPrint({"world:", world})
 	if(world~=nil) then 
+		for k,v in pairs(world.aliases) do
+			ret=ret..strDef(world, k)
+			debugPrint({k, v, ret})
+		end
 		for k,v in pairs(world) do
-			if(k~="MYCERR" and k~="MYCERR_STR") then
+			if(k~="MYCERR" and k~="MYCERR_STR" and k~="aliases" and k~="symbols") then
 				ret=ret..strDef(world, k)
 			end
 		end
@@ -103,7 +107,11 @@ end
 function strDef(world, k) -- return the definition of the predicate k as a string
 	local ret, argCount, args, hash, val, i, v, sep, pfx
 	ret=""
-	v=world[k]
+	if(world.aliases[k]) then
+		v=world[world.aliases[k]]
+	else
+		v=world[k]
+	end
 	if(nil==v) then return ret end
 	det=v.det
 	if(nil==v.det or v.det) then det="det" else det="nondet" end

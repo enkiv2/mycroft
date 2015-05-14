@@ -39,6 +39,7 @@ function main(argv)
 	files={}
 	strs={}
 	world={}
+	world.aliases={}
 	peers={}
 	daemonMode=false
 	interactive=true
