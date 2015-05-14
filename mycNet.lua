@@ -5,7 +5,56 @@ end
 function setupNetworkingNMCU()
 	debugPrint("detected NodeMCU; setting up.")
 	setupNetworkingCommon()
-	setupNetworkingDummy() --XXX
+	mycnet.temp={}
+	local ignore=function() end
+	mycnet.restartServer=function()
+		if(daemonMode) then
+			mycnet.server=net.createServer(net.TCP, 300)
+		else
+			mycnet.server=net.createServer(net.TCP, 0.1)
+		end
+		updateMBX=function(client, str)
+			if(not mycnet.temp[client]) then mycnet.temp[client]="" end
+			if(string.find(str, "\n$")~=nil) then
+				mycnet.temp[client]=mycnet.temp[client]..str
+			else
+				local line=string.gsub(mycnet.temp[client]..str, "\n$", "")
+				mycnet.temp[client]=""
+				if(string.find(line, '^ *%?%-')~=nil) then
+					netPrint("line is query; executing immediately")
+					client:send(serialize(parseLine(world, line)).."\n", ignore)
+				else
+					table.insert(mycnet.mailbox, {line, client})
+					netPrint("contents of mailbox: "..serialize(mycnet.mailbox))
+				end
+				client.close()
+			end
+		end
+		callbackFn=function(client) 
+			client:on("receive", updateMBX)
+		end
+		mycnet.server=createServer(net.TCP, callbackFn)
+	end
+	mycnet.forwardRequest=function(world, c) 
+		local handleSend=function(cl, s)
+			cl:send(c.."\n")
+		end
+		local handleReceive=function(cl, s)
+			parseLine(world, string.gsub(c, ".\n$", " :- "..s.."."))
+			cl.close()
+		end
+		local client=net.createConnection(net.TCP, 0)
+		client:on("connection", handleSend)
+		local firstPeer=mycnet.getCurrentPeer(world)
+		netPrint({"firstPeer", firstPeer})
+		local peer=mycnet.getNextPeer(world)
+		netPrint({"peer", peer})
+		if(nil==peer) then return nil end
+		client:connect(peer[2], peer[1])
+		return nil
+	end -- send a line of code to next peer
+	mycnet.checkMailbox=function(world) end
+	return mycnet.restartServer()
 end
 function setupNetworkingLJIT()
 	debugPrint("detected luajit; setting up.")
