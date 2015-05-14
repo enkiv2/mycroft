@@ -36,3 +36,6 @@ Mycroft has notation for whether or not predicates are determinate. It memoizes 
 
 A composite truth value is a concept borrowed from Probablistic Logic Networks, and consists of two components -- a percentage truth (or percentage likelihood of truth) and a percentage confidence. A truth value of 1 with a confidence value of 1 is 100% true with 100% confidence; a truth value of 0 with a confidence of 1 is false with 100% confidence; a truth value of 0.5 with a confidence of 0.75 indicates that the system is 75% sure that the predicate is 50% likely to be true (or is 75% sure that the predicate is 50% true).
 
+# Future plans
+
+Eventually, I'd like this software to run reasonably well on the ESP8266 under NodeMCU. One of the reasons that logic languages failed back in the 80s is that even projects that attempted parallelism (such as the Japanese government's 5th Generation Computing initiative) attempted parallelism in a context of single large computers in a strictly ordered environment; however, running a distributed caching logic language on a network of $3 standalone wifi controllers means that someone can spend $60 and get a 20-node cluster that'll fit in their pocket, or embed multiple nodes in clothing and allow temporary networks to form whenever multiple nodes come within wifi range of each other.
