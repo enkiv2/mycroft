@@ -5,6 +5,7 @@ verbose=false
 version=0.01
 ansi=true
 forwardQueries=false
+debug=false
 
 usage="Mycroft v"..tostring(version)..[[
 
@@ -94,6 +95,7 @@ function main(argv)
 			elseif("+t"==arg) then testMode=false
 			elseif("+p"==arg) then paranoid=false
 			elseif("-p"==arg) then paranoid=true
+			elseif("-debug"==arg) then debug=true
 			elseif("+d"==arg) then daemonMode=false
 			elseif("-d"==arg) then daemonMode=true interactive=false forceInteractive=false ansi=false
 			elseif("-P"==arg) then nextPN=true
@@ -140,7 +142,7 @@ function main(argv)
 		table.insert(mycnet.peers, f)
 	end
 	debugPrint({"peers:", mycnet.peers})
-	--local mainCoroutine=coroutine.create(function() 
+	function doMain() 
 		local home=os.getenv("HOME")
 		if(nil==home) then
 			home=""
@@ -173,25 +175,29 @@ function main(argv)
 			print(serialize(executePredicateNA(world, "welcome", {})))
 			local x=mainLoop(world)
 			while (x) do x=mainLoop(world) end
-			--if(not s) then print(x) end
-			--coroutine.yield()
+			if(not debug) then coroutine.yield() end
 		elseif(daemonMode) then
 			while(true) do
 				mycnet.yield(world)
-				coroutine.yield()
+				if(not debug) then coroutine.yield() end 
 			end
 		end
-	--end)
+	end
+	local mainCoroutine=coroutine.create(doMain)
 	local listenCoroutine=coroutine.create(function()
 		while(true) do
 			mycnet.yield(world)
 			coroutine.yield()
 		end
 	end)
-	--while(coroutine.status(mainCoroutine)~="dead") do
-	--	coroutine.resume(mainCoroutine)
-	--	coroutine.resume(listenCoroutine)
-	--end
+	if(debug) then
+		doMain()
+	else
+		while(coroutine.status(mainCoroutine)~="dead") do
+			coroutine.resume(mainCoroutine)
+			coroutine.resume(listenCoroutine)
+		end
+	end
 	exitClean(0)
 end
 
