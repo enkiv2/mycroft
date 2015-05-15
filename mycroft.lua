@@ -5,7 +5,7 @@ verbose=false
 version=0.01
 ansi=true
 forwardQueries=false
-debug=false
+debugMode=false
 
 usage="Mycroft v"..tostring(version)..[[
 
@@ -95,7 +95,7 @@ function main(argv)
 			elseif("+t"==arg) then testMode=false
 			elseif("+p"==arg) then paranoid=false
 			elseif("-p"==arg) then paranoid=true
-			elseif("-debug"==arg) then debug=true
+			elseif("-debug"==arg) then debugMode=true
 			elseif("+d"==arg) then daemonMode=false
 			elseif("-d"==arg) then daemonMode=true interactive=false forceInteractive=false ansi=false
 			elseif("-P"==arg) then nextPN=true
@@ -175,11 +175,11 @@ function main(argv)
 			print(serialize(executePredicateNA(world, "welcome", {})))
 			local x=mainLoop(world)
 			while (x) do x=mainLoop(world) end
-			if(not debug) then coroutine.yield() end
+			if(not debugMode) then coroutine.yield() end
 		elseif(daemonMode) then
 			while(true) do
 				mycnet.yield(world)
-				if(not debug) then coroutine.yield() end 
+				if(not debugMode) then coroutine.yield() end 
 			end
 		end
 	end
@@ -190,7 +190,7 @@ function main(argv)
 			coroutine.yield()
 		end
 	end)
-	if(debug) then
+	if(debugMode) then
 		doMain()
 	else
 		while(coroutine.status(mainCoroutine)~="dead") do
