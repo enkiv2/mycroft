@@ -109,6 +109,7 @@ function strDef(world, k) -- return the definition of the predicate k as a strin
 	ret=""
 	if(world.aliases[k]) then
 		v=world[world.aliases[k]]
+		if (nil==v) then ret=ret.."nondet "..k.."() :- "..world.aliases[k]..".\n" end
 	else
 		v=world[k]
 	end

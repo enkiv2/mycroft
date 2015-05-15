@@ -135,11 +135,12 @@ function main(argv)
 	mycnet={}
 	mycnet.port=port
 	initMycroft(world)
+	world.MYCERR=MYC_ERR_NOERR
 	for _,f in ipairs(peers) do
 		table.insert(mycnet.peers, f)
 	end
 	debugPrint({"peers:", mycnet.peers})
-	local mainCoroutine=coroutine.create(function() 
+	--local mainCoroutine=coroutine.create(function() 
 		local home=os.getenv("HOME")
 		if(nil==home) then
 			home=""
@@ -170,27 +171,27 @@ function main(argv)
 		end
 		if(interactive) then
 			print(serialize(executePredicateNA(world, "welcome", {})))
-			local s, x=pcall(mainLoop,world)
-			while (s and x) do s, x=pcall(mainLoop,world) end
-			if(not s) then print(x) end
-			coroutine.yield()
+			local x=mainLoop(world)
+			while (x) do x=mainLoop(world) end
+			--if(not s) then print(x) end
+			--coroutine.yield()
 		elseif(daemonMode) then
 			while(true) do
 				mycnet.yield(world)
 				coroutine.yield()
 			end
 		end
-	end)
+	--end)
 	local listenCoroutine=coroutine.create(function()
 		while(true) do
 			mycnet.yield(world)
 			coroutine.yield()
 		end
 	end)
-	while(coroutine.status(mainCoroutine)~="dead") do
-		coroutine.resume(mainCoroutine)
-		coroutine.resume(listenCoroutine)
-	end
+	--while(coroutine.status(mainCoroutine)~="dead") do
+	--	coroutine.resume(mainCoroutine)
+	--	coroutine.resume(listenCoroutine)
+	--end
 	exitClean(0)
 end
 

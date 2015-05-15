@@ -255,6 +255,7 @@ function evertPredTbl(t, world, defSem)
 		if(type(i)=="function") then
 			i=i()
 		end
+		debugPrint(i)
 		if(type(i)=="string") then
 			if("!"==i) then 
 				table.insert(ret, "!")
@@ -279,7 +280,7 @@ function evertPredTbl(t, world, defSem)
 				if(i.truth~=nil and i.confidence~=nil) then
 					tr=i
 				end
-				if(detSem) then 
+				if(defSem) then 
 					if(cmpTruth(tr, YES)) then
 						table.insert(ret.preds, createPredID("true", 0))
 						table.insert(ret.convs, genCorrespondences({}, {}))
@@ -376,7 +377,7 @@ function parseLine(world, line) -- Hand a line off to the interpreter
 	if(""==line) then return line end
 	if("#"==line[0]) then return "" end
 	local rets=serialize(string.gsub(
-		string.gsub(line, "^(%l%w+)  *(%l%w+) *(%b()) *:%- *(.+). *$", 
+		string.gsub(line, "^(%l%w*)  *(%l%w*) *(%b()) *:%- *(.+). *$", 
 			function (det, pname, pargs, pdef) 
 				debugPrint("fact: "..pname..pargs..":-"..pdef)
 				pcall(mycnet.forwardFact, world, line)

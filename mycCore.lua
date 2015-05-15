@@ -25,6 +25,7 @@ function executePredicatePA(world, p, args) -- execute p with the given arglist
 		if(nil~=world.aliases[ppid]) then 
 			ppid=world.aliases[ppid]
 			p=inflatePredID(ppid)
+			if(nil~=builtins[ppid]) then return builtins[ppid](world, unpack(args)) end
 		end
 		r=factExists(world, p, hash)
 		if(nil~=r) then return r end
@@ -108,6 +109,7 @@ function createDef(world, pred, preds, convs, op, det, literals) -- define a pre
 	pred=inflatePredID(pred)
 	local p
 	if(nil==world) then return throw(world, MYC_ERR_UNDEFWORLD, pred, {}, " :- "..serialize({op, preds, conv})) end
+	if (nil==world.aliases) then world.aliases={} end
 	p=serialize(pred)
 	if(nil==world[p]) then
 		world[p]={}
@@ -250,10 +252,10 @@ function mainLoop(world)
 		prompt=ps1
 		if(nil==string.find(line, ":%-")) then line="?- "..line end
 		debugPrint("LINE: "..line)
-		local s, ret=pcall(parseLine, world, line)
-		if(not s) then print(ret) print (debug.traceback()) return false end
-		s, ret=pcall(serialize, ret)
-		if(not s) then print(ret) print(debug.traceback()) return false end
+		ret=parseLine(world, line)
+		--if(not s) then print(ret) print (debug.traceback()) return false end
+		ret=serialize(ret)
+		--if(not s) then print(ret) print(debug.traceback()) return false end
 		print(ret)
 		if(world.MYCERR~=MYC_ERR_NOERR) then
 			construct_traceback(world, "mainloop", "()")
@@ -275,6 +277,7 @@ function initMycroft(world)
 	require("mycErr")
 	world.MYCERR=MYC_ERR_NOERR
 	world.MYCERR_STR=""
+	world.aliases={}
 	require("mycNet")
 	setupNetworking()
 	require("mycType")

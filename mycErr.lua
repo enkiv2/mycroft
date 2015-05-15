@@ -18,7 +18,7 @@ function construct_traceback(world, p, hash) -- add a line to the traceback
 	if(world.MYCERR_STR==nil or world.MYC_ERR_STR=="") then
 		world.MYCERR_STR=error_string(world.MYCERR)
 	end
-	world.MYCERR_STR=world..MYCERR_STR.." at "..ppid.." "..pname..hash.."\n"
+	world.MYCERR_STR=world.MYCERR_STR.." at "..ppid.." "..pname..hash.."\n"
 end
 
 function error_string(code) -- convert an error code to an error message
