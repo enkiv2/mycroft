@@ -108,6 +108,8 @@ helpText["false/0"]=helpText["true/0"]
 helpText["nc/0"]=helpText["true/0"]
 builtins["set/2"]=function(world, x, y) unificationSetItem(world, x, unificationGetItem(world, y)) return builtins["equal/2"](world, x, y) end
 helpText["set/2"]="set(X, Y) forces unification of X with Y, if possible."
+builtins["eval/1"]=function(world, x) x=unificationGetItem(world, x) return parseLine(world, x) end
+helpText["eval/1"]="eval(Line) evaluates the line of code Line"
 builtins["print/1"]=function(world, c) print(serialize(c)) return YES end
 helpText["print/1"]=[[print(X) will print the value of X to stdout, followed by a newline]]
 builtins["puts/1"]=function(world,c) io.write(serialize(c)) return YES end
@@ -266,6 +268,36 @@ helpText["mul/3"]=helpText["add/3"]
 helpText["div/3"]=helpText["add/3"]
 helpText["concat/3"]="concat(A,B,X)\tSet X to the string concatenation of A and B"
 helpText["append/3"]="append(A,B,X)\tSet X to a list consisting of the item B appended to the end of the list A. If A is not a list, set X to a list consisting of items A and B."
+
+-- list functions
+builtins['lindex/3']=function(world, l, i, x)
+	l=unificationGetItem(world, l)
+	i=unificationGetItem(world, i)
+	if(type(l)=="table") then
+		return unificationSetItem(world, x, l[i])
+	elseif(type(l)=="function") then
+		local val, n, count
+		val,n=l()
+		count=i-1
+		while(count>0 and n~=nil) do
+			val,n = n()
+		end
+		return unificationSetItem(world, x, val)
+	end
+	return NC
+end
+builtins['lset/3']=function(world, l, i, x)
+	l=unificationGetItem(world, l)
+	i=unificationGetItem(world, i)
+	x=unificationGetItem(world, x)
+	if(type(l)=="table") then
+		l[i]=x
+		return YES
+	end
+	return NC
+end
+helpText["lindex/3"]="lindex(List, Index, X) sets the value of X to the value of the item at index Index of List\nlset(List, Index,X) sets the value if List[Index] to X"
+helpText["lset/3"]=helpText["lindex/3"]
 
 
 function initBuiltins()
