@@ -1,0 +1,7 @@
+#!/usr/bin/env zsh
+# Translate CMU NELL's "Every Belief in the KB" format (http://rtw.ml.cmu.edu/rtw/faq) to Mycroft source
+tail -n +2 | 
+awk  '
+{
+	print("det " $2 "(\"" $1 "\",\"" $3 "\") :- <" $5 "|.")
+}' | sed 's/^det \([^:]*\):\([^(]*\)(/det \2(/g;s/\([0-9]\),\([0-9\-].*:-\)/\1","\2/g'
