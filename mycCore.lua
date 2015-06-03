@@ -142,7 +142,7 @@ function createDef(world, pred, preds, convs, op, det, literals) -- define a pre
 			local i,j,same
 			same=true
 			for i,j in ipairs(convs[1][2]) do
-				if(convs[1][1][i]~=j or convs[1][3][i]) then
+				if(convs[1][1][i]~=j or convs[1][3][i] or literals[i]) then
 					same=false
 				end
 			end
