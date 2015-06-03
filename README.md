@@ -44,7 +44,7 @@ is not the same as
 
 2. Because of the use of composite truth values, Mycroft implicitly supports the open-world assumption -- in other words, queries that cannot be resolved as true are resolved as some non-true value rather than necessarily false, and queries that cannot be resolved at all are evaluated as unknown (the truth value |0>, also known as NC or 'No Confidence'). This means that you can't prove by exhaustion -- there is no direct Mycroft equivalent of the PROLOG built-in '/+'.
 
-3. Mycroft does not attempt to expand possible values for a variable. This is related to differences #1 and #2 -- we can't expand to the whole hebrand universe because we assume that the universe is open, and so we can't do real unification because the set of atoms that could be substituted is unbounded. This is both positive -- you can't run into an accidental infinite loop trying to evaluate a predicate for all integers -- and negative -- you can't implicitly use this system for discovery, but instead must produce the set of atoms you're interested in and iterate over them yourself.
+3. Mycroft does not attempt to expand possible values for a variable. This is related to differences #1 and #2 -- we can't expand to the whole Herbrand universe because we assume that the universe is open, and so we can't do real unification because the set of atoms that could be substituted is unbounded. This is both positive -- you can't run into an accidental infinite loop trying to evaluate a predicate for all integers -- and negative -- you can't implicitly use this system for discovery, but instead must produce the set of atoms you're interested in and iterate over them yourself.
 
 ## What are composite truth values?
 
