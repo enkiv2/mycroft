@@ -32,6 +32,20 @@ PROLOG, partly for historical reasons, is quite slow. It performs a depth-first 
 
 Mycroft has notation for whether or not predicates are determinate. It memoizes the results of determinate predicates, meaning that a determinate predicate will finish immediately the second time it's run. It memoizes intermediate results for determinate predicates, meaning that even an indeterminate predicate will run faster the second time it's run, if it depends upon determinate predicates. Additionally, a group of Mycroft instances can be formed into a cluster, wherein the results for any determinate predicates will be distributed to all instances, and the work of evaluating a predicate can be distributed across instances.
 
+## How does Mycroft differ from PROLOG?
+
+1. Mycroft doesn't perform real unification -- meaning that
+
+    ?- set(X, hello), print(X).
+
+is not the same as
+
+    ?- print(X), set(X, hello).
+
+2. Because of the use of composite truth values, Mycroft implicitly supports the open-world assumption -- in other words, queries that cannot be resolved as true are resolved as some non-true value rather than necessarily false, and queries that cannot be resolved at all are evaluated as unknown (the truth value |0>, also known as NC or 'No Confidence'). This means that you can't prove by exhaustion -- there is no direct Mycroft equivalent of the PROLOG built-in '/+'.
+
+3. Mycroft does not attempt to expand possible values for a variable. This is related to differences #1 and #2 -- we can't expand to the whole hebrand universe because we assume that the universe is open, and so we can't do real unification because the set of atoms that could be substituted is unbounded. This is both positive -- you can't run into an accidental infinite loop trying to evaluate a predicate for all integers -- and negative -- you can't implicitly use this system for discovery, but instead must produce the set of atoms you're interested in and iterate over them yourself.
+
 ## What are composite truth values?
 
 A composite truth value is a concept borrowed from Probablistic Logic Networks, and consists of two components -- a percentage truth (or percentage likelihood of truth) and a percentage confidence. A truth value of 1 with a confidence value of 1 is 100% true with 100% confidence; a truth value of 0 with a confidence of 1 is false with 100% confidence; a truth value of 0.5 with a confidence of 0.75 indicates that the system is 75% sure that the predicate is 50% likely to be true (or is 75% sure that the predicate is 50% true).
