@@ -163,7 +163,7 @@ function colorCode(bg, fg, bold)
 	if(bold~=nil) then b="1" end
 	return string.char(27).."["..b..";"..tostring(30+colors[fg])..";"..tostring(40+colors[bg]).."m" 
 end
-function pretty(msg)
+function pretty(msg) -- perform syntax highlighting if we are in ansi mode
 	if(ansi) then
 		msg=string.gsub(string.gsub(string.gsub(string.gsub(string.gsub(string.gsub(string.gsub(string.gsub(string.gsub(string.gsub(msg, 
 			"(;)", function (c)
