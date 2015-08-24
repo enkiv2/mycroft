@@ -28,7 +28,8 @@ Mycroft is a logic language with a syntax similar to PROLOG. It additionally has
 
 ## Why not just use PROLOG?
 
-PROLOG, partly for historical reasons, is quite slow. It performs a depth-first search on the logic tree, in a single thread. Automatic memoization can't be used because determinate 'pure prolog' predicates can be freely mixed with indeterminate predicates like i/o and random number generation.
+PROLOG, partly for historical reasons, is quite slow (high time complexity for both worst-case and average-case, compared to solutions implemented in other languages for many classes of problems). It performs a depth-first search on the logic tree, in a single thread. Automatic memoization can't be used because determinate 'pure prolog' predicates can be freely mixed with indeterminate predicates like i/o and random number generation. Implicit parallelism is complicated to implement because programs assume that branches will be run in order -- meaning that any implicitly parallel PROLOG needs to be able to interrupt and roll back branches that would not have run in a purely linear execution model in order to remain standard.
+
 
 Mycroft has notation for whether or not predicates are determinate. It memoizes the results of determinate predicates, meaning that a determinate predicate will finish immediately the second time it's run. It memoizes intermediate results for determinate predicates, meaning that even an indeterminate predicate will run faster the second time it's run, if it depends upon determinate predicates. Additionally, a group of Mycroft instances can be formed into a cluster, wherein the results for any determinate predicates will be distributed to all instances, and the work of evaluating a predicate can be distributed across instances.
 
@@ -41,6 +42,8 @@ Mycroft has notation for whether or not predicates are determinate. It memoizes 
 is not the same as
 
     ?- print(X), set(X, hello).
+
+Instead, Mycroft enforces functional-style single-assignment of values to identifiers within predicates.
 
 2. Because of the use of composite truth values, Mycroft implicitly supports the open-world assumption -- in other words, queries that cannot be resolved as true are resolved as some non-true value rather than necessarily false, and queries that cannot be resolved at all are evaluated as unknown (the truth value |0>, also known as NC or 'No Confidence'). This means that you can't prove by exhaustion -- there is no direct Mycroft equivalent of the PROLOG built-in '/+'.
 
