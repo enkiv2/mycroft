@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/github-dark.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print">
+
+    <title>Mycroft by enkiv2</title>
+  </head>
+
+  <body>
+
+    <header>
+      <div class="container">
+        <h1>Mycroft</h1>
+        <h2>A prolog-like language with compound truth value logic</h2>
+
+        <section id="downloads">
+          <a href="https://github.com/enkiv2/mycroft/zipball/master" class="btn">Download as .zip</a>
+          <a href="https://github.com/enkiv2/mycroft/tarball/master" class="btn">Download as .tar.gz</a>
+          <a href="https://github.com/enkiv2/mycroft" class="btn btn-github"><span class="icon"></span>View on GitHub</a>
+        </section>
+      </div>
+    </header>
+
+    <div class="container">
+      <section id="main_content">
+        <pre><code>   __  ___                  _____ 
+  /  |/  /_ _____________  / _/ /_ Composite
+ / /|_/ / // / __/ __/ _ \/ _/ __/     Logic
+/_/  /_/\_, /\__/_/  \___/_/ \__/   Language
+       /___/  v. 0.01
+</code></pre>
+
+<h1></h1>
+
+<p>A prolog-like language with compound truth value logic</p>
+
+<p>See <a href="mycroft-lang.md">the language documentation</a>, or <a href="test.myc">some simple example code from the test suite</a>.</p>
+
+<p>For best performance, use with luajit and install readline and luasocket:</p>
+
+<pre><code>luarocks-5.1 install readline luasocket
+luajit mycroft.lua
+</code></pre>
+
+<p>Or, alternately, built and install from the rockspec file:</p>
+
+<pre><code>luarocks-5.1 build mycroft-0.01-1.rockspec
+</code></pre>
+
+<h1>
+<a id="faq" class="anchor" href="#faq" aria-hidden="true"><span class="octicon octicon-link"></span></a>FAQ</h1>
+
+<h2>
+<a id="what-is-mycroft" class="anchor" href="#what-is-mycroft" aria-hidden="true"><span class="octicon octicon-link"></span></a>What is Mycroft?</h2>
+
+<p>Mycroft is a logic language with a syntax similar to PROLOG. It additionally has support for transparent distributed computing and composite truth values.</p>
+
+<h2>
+<a id="why-not-just-use-prolog" class="anchor" href="#why-not-just-use-prolog" aria-hidden="true"><span class="octicon octicon-link"></span></a>Why not just use PROLOG?</h2>
+
+<p>PROLOG, partly for historical reasons, is quite slow (high time complexity for both worst-case and average-case, compared to solutions implemented in other languages for many classes of problems). It performs a depth-first search on the logic tree, in a single thread. Automatic memoization can't be used because determinate 'pure prolog' predicates can be freely mixed with indeterminate predicates like i/o and random number generation. Implicit parallelism is complicated to implement because programs assume that branches will be run in order -- meaning that any implicitly parallel PROLOG needs to be able to interrupt and roll back branches that would not have run in a purely linear execution model in order to remain standard.</p>
+
+<p>Mycroft has notation for whether or not predicates are determinate. It memoizes the results of determinate predicates, meaning that a determinate predicate will finish immediately the second time it's run. It memoizes intermediate results for determinate predicates, meaning that even an indeterminate predicate will run faster the second time it's run, if it depends upon determinate predicates. Additionally, a group of Mycroft instances can be formed into a cluster, wherein the results for any determinate predicates will be distributed to all instances, and the work of evaluating a predicate can be distributed across instances.</p>
+
+<h2>
+<a id="how-does-mycroft-differ-from-prolog" class="anchor" href="#how-does-mycroft-differ-from-prolog" aria-hidden="true"><span class="octicon octicon-link"></span></a>How does Mycroft differ from PROLOG?</h2>
+
+<p>1) Mycroft doesn't perform real unification -- meaning that</p>
+
+<pre><code>?- set(X, hello), print(X).
+</code></pre>
+
+<p>is not the same as</p>
+
+<pre><code>?- print(X), set(X, hello).
+</code></pre>
+
+<p>Instead, Mycroft enforces functional-style single-assignment of values to identifiers within predicates.</p>
+
+<p>2) Because of the use of composite truth values, Mycroft implicitly supports the open-world assumption -- in other words, queries that cannot be resolved as true are resolved as some non-true value rather than necessarily false, and queries that cannot be resolved at all are evaluated as unknown (the truth value |0&gt;, also known as NC or 'No Confidence'). This means that you can't prove by exhaustion -- there is no direct Mycroft equivalent of the PROLOG built-in '/+'.</p>
+
+<p>3) Mycroft does not attempt to expand possible values for a variable. This is related to differences #1 and #2 -- we can't expand to the whole Herbrand universe because we assume that the universe is open, and so we can't do real unification because the set of atoms that could be substituted is unbounded. This is both positive -- you can't run into an accidental infinite loop trying to evaluate a predicate for all integers -- and negative -- you can't implicitly use this system for discovery, but instead must produce the set of atoms you're interested in and iterate over them yourself.</p>
+
+<h2>
+<a id="what-are-composite-truth-values" class="anchor" href="#what-are-composite-truth-values" aria-hidden="true"><span class="octicon octicon-link"></span></a>What are composite truth values?</h2>
+
+<p>A composite truth value is a concept borrowed from Probablistic Logic Networks, and consists of two components -- a percentage truth (or percentage likelihood of truth) and a percentage confidence. A truth value of 1 with a confidence value of 1 is 100% true with 100% confidence; a truth value of 0 with a confidence of 1 is false with 100% confidence; a truth value of 0.5 with a confidence of 0.75 indicates that the system is 75% sure that the predicate is 50% likely to be true (or is 75% sure that the predicate is 50% true).</p>
+
+<h1>
+<a id="future-plans" class="anchor" href="#future-plans" aria-hidden="true"><span class="octicon octicon-link"></span></a>Future plans</h1>
+
+<p>Eventually, I'd like this software to run reasonably well on the ESP8266 under NodeMCU. One of the reasons that logic languages failed back in the 80s is that even projects that attempted parallelism (such as the Japanese government's 5th Generation Computing initiative) attempted parallelism in a context of single large computers in a strictly ordered environment; however, running a distributed caching logic language on a network of $3 standalone wifi controllers means that someone can spend $60 and get a 20-node cluster that'll fit in their pocket, or embed multiple nodes in clothing and allow temporary networks to form whenever multiple nodes come within wifi range of each other.</p>
+      </section>
+    </div>
+
+    
+  </body>
+</html>
