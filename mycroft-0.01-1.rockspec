@@ -33,7 +33,8 @@ build = {
 			["mycroft.mycParse"] = "mycParse.lua",
 			["mycroft.mycPretty"] = "mycPretty.lua",
 			["mycroft.mycTests"] = "mycTests.lua",
-			["mycroft.mycType"] = "mycType.lua"
+			["mycroft.mycType"] = "mycType.lua",
+			["mycroft.hash"] = "hash.lua"
 		},
 		bin = {
 			["mycroft"] = "mycroft.lua"

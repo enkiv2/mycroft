@@ -269,6 +269,8 @@ end
 function initMycroft(world)
 	package.path=package.path..";/usr/share/lua/5.1/?.lua;/usr/local/share/lua/5.1/?.lua"
 	package.cpath=package.cpath..";/usr/lib/lua/5.1/?.so;/usr/local/lib/lua/5.1/?.so"
+	local s,e = pcall(require, "hash")
+	if(not s) then print e end
 	require("mycBuiltins")
 	initBuiltins()
 	require("mycTests")
