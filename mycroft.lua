@@ -12,7 +12,7 @@ usage="Mycroft v"..tostring(version)..[[
 Usage:
 	mycroft
 	mycroft [-h|-?|--help|-help]
-	mycroft [file1 file2...] [[-e statement ] [-e statement2]...] [-i] [-p] [-v] [[-P peername peerport] [-P peername peerport]...]
+	mycroft [file1 file2...] [ [-e statement ] [-e statement2]...] [-i] [-p] [-v] [ [-P peername peerport] [-P peername peerport]...]
 	mycroft -t
 
 Options:
@@ -122,11 +122,15 @@ function main(argv)
 		end
 	end
 	package.path=package.path..";/usr/share/lua/5.1/?/init.lua;/usr/share/lua/5.1/?.lua"
-	if(not pcall(require,"mycCore")) then
-		local s,e=pcall(require, "mycroft")
-		if(not s) then
-			print("Error: cannot load library! "..tostring(e))
-			os.exit(1)
+	local s,e=pcall(require,"mycCore")
+	if(not s) then
+		print(e)
+		if(mycCore==nil) then
+			local s,e=pcall(require, "mycroft")
+			if(not s) then
+				print("Error: cannot load library! "..tostring(e))
+				os.exit(1)
+			end
 		end
 	end
 	if(ansi) then
