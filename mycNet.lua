@@ -222,10 +222,16 @@ function setupNetworkingCommon()
 			return nil
 		end
 	end -- process one step of somebody else's request
-	mycnet.hashPeers=function(world)
-		if(#mycnet.peers~=table.maxn(mycnet.peerHashed)) then
-			for i=table.maxn(mycnet.peerHashed),#mycnet.peers do
-				mycnet.peerHashed[sha2.hash256(serialize(mycnet.peers[i]))]=mycnet.peers[i]
+	mycnet.hashPeers=function(world, force)
+		if(force) then
+			for i in mycnet.peers do
+				mycnet.peerHashed[sha2.hash256(serialize(i))]=i
+			end
+		else
+			if(#mycnet.peers~=table.maxn(mycnet.peerHashed)) then
+				for i=table.maxn(mycnet.peerHashed),#mycnet.peers do
+					mycnet.peerHashed[sha2.hash256(serialize(mycnet.peers[i]))]=mycnet.peers[i]
+				end
 			end
 		end
 	end
