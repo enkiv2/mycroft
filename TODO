@@ -1,4 +1,5 @@
 - Finish internet layer for NodeMCU and LuaJit FFI
 - Refactor parser to eliminate interpreter semantics? (Definition & interpreter semantics are getting difficult to keep in sync; we could switch entirely to def semantics & then execute the pred, and optionally remove the anonymous preds created, but we'd need to pass that info through the whole system to avoid distributing the new definitions for intermediate preds)
 - Minimizer? (ESP8266 might not have much flash)
+- Switch from round-robin model for message distribution to hash-similarity model similar to http://en.wikipedia.org/wiki/Chord_(peer-to-peer)  -- this requires a fast pure-lua hashing implementation
 
