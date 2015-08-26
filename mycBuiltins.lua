@@ -525,7 +525,7 @@ builtins["sethelp/2"]=function(world, x, y)
 	helpText[x]=y
 	return YES
 end
-builtins["copying/0"]=function(world) print(builtins["copying"]) end
+builtins["copying/0"]=function(world) print(helpText["copying"]) end
 helpText["copying/0"]=helpText["copying"]
 helpText["banner"]=banner
 helpText["ansibanner"]=ansibanner
