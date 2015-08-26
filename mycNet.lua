@@ -2,6 +2,30 @@
 if(not mycnet) then 
 	mycnet={}
 end
+function hashProximity(tbl, hash)
+	local keys, res, item
+	keys={}
+	for n in pairs(tbl) do
+		table.insert(keys, n)
+	end
+	table.sort(keys)
+	item=keys[0]
+	res={}
+	for i,n in ipairs(keys) do
+		if(n<hash) then 
+			item=i
+			table.insert(res, 1, tbl[n])
+		else 
+			if(#res<i-item) then
+				table.insert(res, (i-item)+1, tbl[n])
+			else
+				table.insert(res, tbl[n])
+			end
+		end
+	end
+	return res
+	
+end
 function setupNetworkingNMCU()
 	debugPrint("detected NodeMCU; setting up.")
 	setupNetworkingCommon()
@@ -36,6 +60,12 @@ function setupNetworkingNMCU()
 		mycnet.server=createServer(net.TCP, callbackFn)
 	end
 	mycnet.forwardRequest=function(world, c) 
+		if(mycnet.directedMode) then
+			local hashl=sha2.hash256(c)
+			mycnet.hashPeers(world)
+			mycnet.peers=hashProximity(mycnet.peerHash, hashl)
+			mycnet.pptr=1
+		end
 		local handleSend=function(cl, s)
 			cl:send(c.."\n")
 		end
@@ -113,6 +143,12 @@ function setupNetworkingLSOCK()
 		end
 	end
 	mycnet.forwardRequest=function(world, c) 
+		if(mycnet.directedMode) then
+			local hashl=sha2.hash256(c)
+			mycnet.hashPeers(world)
+			mycnet.peers=hashProximity(mycnet.peerHash, hashl)
+			mycnet.pptr=1
+		end
 		local firstPeer=mycnet.getCurrentPeer(world)
 		netPrint({"firstPeer", firstPeer})
 		local peer=mycnet.getNextPeer(world)
@@ -161,8 +197,10 @@ function setupNetworkingCommon()
 	if(not mycnet.port) then
 		mycnet.port=1960 -- hardcode default for now
 	end
+	mycnet.directedMode=true
 	mycnet.backlog=512
 	mycnet.peers={}
+	mycnet.peerHashed={}
 	mycnet.mailbox={}
 	mycnet.pptr=1
 	mycnet.forwardedLines={}
@@ -184,10 +222,23 @@ function setupNetworkingCommon()
 			return nil
 		end
 	end -- process one step of somebody else's request
+	mycnet.hashPeers=function(world)
+		if(#mycnet.peers~=table.maxn(mycnet.peerHashed)) then
+			for i=table.maxn(mycnet.peerHashed),#mycnet.peers do
+				mycnet.peerHashed[sha2.hash256(serialize(mycnet.peers[i]))]=mycnet.peers[i]
+			end
+		end
+	end
 	mycnet.forwardFact=function(world, l)
+		local hashl=sha2.hash256(l)
 		netPrint("forwarding fact [["..l.."]]")
-		if(mycnet.forwardedLines[l]) then return nil end
-		mycnet.forwardedLines[l]=true
+		if(mycnet.forwardedLines[hashl]) then return nil end
+		mycnet.forwardedLines[hashl]=true
+		if(mycnet.directedMode) then
+			mycnet.hashPeers(world)
+			mycnet.peers=hashProximity(mycnet.peerHash, hashl)
+			mycnet.pptr=1
+		end
 		local sp=mycnet.getCurrentPeer(world)
 		netPrint({"current peer", sp})
 		if(nil==sp) then return nil end
