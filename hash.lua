@@ -1,3 +1,82 @@
+-- some compat code for missing bit32
+
+if(bit32 == nil) then
+	if(pcall(require, "bit")) then
+		bit32=require("bit")
+		bit32.rrotate=bit32.ror
+		bit32.lrotate=bit32.rol
+	else
+		bit32={}
+		bit32.bnot=function(x) return (-1 - x)%2^32 end
+		bit32.band2=function (a, b)
+			return ((a+b)-bit32.bxor(a,b))/2
+		end
+		bit32.bor2=function (a, b)
+			return 2^32 - bit32.band(2^32-a, 2^32-b)
+		end
+		bit32.bxor2=function (a, b)
+			local ret=0
+			a = a % (2^32)
+			b = b % (2^32)
+			for i=0,31 do
+				local x=a/2+b/2
+				if(x~=math.floor(x)) then
+					ret=ret+2^i
+				end
+				a=math.floor(a/2)
+				b=math.floor(b/2)
+			end
+			return ret
+		end
+		bit32.band=function(...)
+			local r=nil
+			for i,v in ipairs(arg) do
+				if(r==nil) then
+					r=v % 2^32
+				else
+					r=bit32.band2(r, v % 2^32)
+				end
+			end
+			return r
+		end
+		bit32.bor=function(...)
+			local r=nil
+			for i,v in ipairs(arg) do
+				if(r==nil) then
+					r=v % 2^32
+				else
+					r=bit32.bor2(r, v % 2^32)
+				end
+			end
+			return r
+		end
+		bit32.bxor=function(...)
+			local r=nil
+			for i,v in ipairs(arg) do
+				if(r==nil) then
+					r=v % 2^32
+				else
+					r=bit32.bxor2(r, v % 2^32)
+				end
+			end
+			return r
+		end
+		bit32.lshift=function(x, disp)
+			return x*(2^disp) % 2^32
+		end
+		bit32.rshift=function(x, disp)
+			if(disp<0) then return bit32.lshift(x, -disp) end
+			return math.floor(x % 2^32 / 2^disp)
+		end
+		bit32.lrotate=function (x, disp)
+			return bit32.lshift(x, disp)+bit32.rshift(x, 32-disp)
+		end
+		bit32.rrotate=function (x, disp)
+			return bit32.lshift(x, 32-disp)+bit32.rshift(x, disp)
+		end
+	end
+end
+
 -- Source: http://lua-users.org/wiki/SecureHashAlgorithm
 -- License: MIT (see http://lua-users.org/lists/lua-l/2014-08/msg00628.html)
 -- SHA-256 code in Lua 5.2; based on the pseudo-code from
