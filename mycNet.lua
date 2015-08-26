@@ -61,7 +61,7 @@ function setupNetworkingNMCU()
 	end
 	mycnet.forwardRequest=function(world, c) 
 		if(mycnet.directedMode) then
-			local hashl=sha2.hash256(c)
+			local hashl=sha2.hash256(string.match(c, "([a-z_][A-Za-z0-9_/]+%()"))
 			mycnet.hashPeers(world)
 			mycnet.peers=hashProximity(mycnet.peerHash, hashl)
 			mycnet.pptr=1
@@ -144,7 +144,7 @@ function setupNetworkingLSOCK()
 	end
 	mycnet.forwardRequest=function(world, c) 
 		if(mycnet.directedMode) then
-			local hashl=sha2.hash256(c)
+			local hashl=sha2.hash256(string.match(c, "([a-z_][A-Za-z0-9_/]+%()"))
 			mycnet.hashPeers(world)
 			mycnet.peers=hashProximity(mycnet.peerHash, hashl)
 			mycnet.pptr=1
@@ -236,7 +236,7 @@ function setupNetworkingCommon()
 		mycnet.forwardedLines[hashl]=true
 		if(mycnet.directedMode) then
 			mycnet.hashPeers(world)
-			mycnet.peers=hashProximity(mycnet.peerHash, hashl)
+			mycnet.peers=hashProximity(mycnet.peerHash, sha2.hash256(string.match(l, "([a-z_][a-zA-Z0-9_/]+%()")))
 			mycnet.pptr=1
 		end
 		local sp=mycnet.getCurrentPeer(world)
