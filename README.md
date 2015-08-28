@@ -8,7 +8,7 @@
 =======
 A prolog-like language with compound truth value logic
 
-See [the language documentation](mycroft-lang.md), or [some simple example code from the test suite](test.myc).
+See [the language documentation](mycroft-lang.md), [the language internals](internals.md), or [some simple example code from the test suite](test.myc).
 
 For best performance, use with luajit and install readline and luasocket:
 
