@@ -1,5 +1,6 @@
 builtins={}
 helpText={}
+internalsHelp={}
 banner=[[
    __  ___                  _____ 
   /  |/  /_ _____________  / _/ /_ Composite
@@ -47,6 +48,7 @@ help=[[
 () For help with a builtin, use help(builtin/arity).
 () To list builtins, use builtins().
 () To print the definitions of all defined predicates, use printWorld().
+() To list available help topics relating to mycroft language internals, use help("internals")
 () For version information, use help("version").
 () For information about licensing, use help("copying").]] 
 syntaxHelp=[[Mycroft syntax
@@ -98,6 +100,114 @@ string value of their names:
 	?- equal(hello, "hello"). 		# true
 	?- equal(X, "X"). 			# also true
 ]]
+
+-- internals
+internalsHelp["CTV"]=[[# Mycroft internals: composite truth value manipulation and canonicalization
+
+Malformed truth values are canonicalized to NC. Truth values with zero confidence are canonicalized to NC. Truth values have their components clipped to the range from 0 to 1 inclusive. 
+
+CTV boolean arithmetic operates as follows:
+
+	<A,B> AND <C,D> => <A*C,B*D>
+	<A,B> OR <C,D> => <A*B+C*D-A*C,min(B,D)>
+]]
+internalsHelp["err"]=[[# Mycroft internals: error handling
+
+Each 'world' contains an integer variable MYCERR and a string variable MYCERR_STR. MYCERR is set to 0 if no error has occurred. MYCERR_STR is set to the traceback of the last error that occurred (along with human-readable error name and error message, the predicate in which it occurred, and the signature of each predicate up the stack that doesn't catch it). If caught, MYCERR is set to 0 and MYCERR_STR is set to empty string.
+]]
+internalsHelp["net"]=[[# Mycroft internals: networking and message passing
+
+Mycroft polyfills a table called mycnet with the following settings:
+
+	mycnet.port=1960
+	mycnet.directedMode=true
+	mycnet.backlog=512
+
+The following values:
+
+	mycnet.peers={} -- each element is an array consisting of a hostname followed by a port
+	mycnet.peerHashed={} -- an associative array of the elements of the peers table keyed by the sha256 hash of the serialized elements
+	mycnet.mailbox={} -- a set of requests we have recieved from our peers
+	mycnet.pptr=1 -- the index into the peers table pointing to the 'current' selected peer
+	mycnet.forwardedLines={} -- a list of facts we've already forwarded, to prevent infinite loops
+
+And, the following methods:
+
+	mycnet.getPeers(world) -- get a list of peers
+	mycnet.getCurrentPeer(world) 
+	mycnet.getNextPeer(world) -- increment mycnet.pptr and return getCurrentPeer
+	mycnet.forwardRequest(world, c) -- send a line of code to next peer
+	mycnet.forwardFact(world, c) -- send a line of code to all peers, if it has not already been sent
+	mycnet.checkMailbox(world) -- get a list of requests from peers
+	mycnet.yield(world) -- process a request from the mailbox, if one exists
+	mycnet.restartServer()
+	mycnet.hashPeers(world, force) -- hash the list of peers. If 'force' is set, then rehash all peers; otherwise, hash only if the number of peers has changed
+
+
+If directedMode is set to false, a request will be sent to the next peer in the peers table, in round-robin fashion.
+
+
+If directedMode is set to true, then for any given request, the order in which it is sent will be defined by the comparison of some consistent hash (in this case sha256) of the signature of the first predicate with the hash of the entire serialized representation of the peer -- we send to the peer with the most similar hash first, and send to all others in order of more or less decreasing similarity. This method of routing is similar to Chord's DHT routing.
+
+On NodeMCU (i.e., on an ESP8622), a device *should* determine whether or not an AP exists with some special name and connect to it if it does, but switch into AP mode and create it if it does not. This is not yet impemented.
+
+Depending upon whether or not a node is in daemon mode (along with other circumstances), timeouts are changed in order to ensure reliability. Currently, the default timeout for daemon mode for server listen in 300 seconds and the current default timeout outside of daemon mode is one tenth of a second. Timeouts on connections to other peers during request forwarding are set to one tenth of a second. This is hard-coded but subject to future tuning. 
+]]
+internalsHelp["parsing"]=[[# Mycroft internals: parsing
+
+We have two divergent implementations of parsing: compiler semantics (for predicate definitions) and interpreter semantics (for evaluating complex queries). The primary way in which they differ is that in compiler semantics each pair of ANDed-together predicates is given its own auto-named function, while in interpreter semantics we merely keep track of the results of each pair of ANDed-together predicates. Work is in progress to eliminate as much of interpreter semantics-specific code as possible and use compiler semantics in most cases.
+
+We have multi-level parsing, in part because of limitations of lua regex.
+
+At the top level, we handle lines (and support extending lines within the interactive interpreter by keeping track of incomplete lines). A valid line begins with '?-' and ends with '.'. Any line fitting that criterion will be passed to the second level.
+
+At the second level, we determine whether we are defining a predicate or performing a query. If we have exactly one predicate signature preceeded by 'det' or 'nondet' and followed by ':-', we are defining a predicate; otherwise we are performing a query.
+
+In the case of a predicate definition, we cache the 'det' setting, determine the predicate ID (i.e., the name and arity of the predicate), and pass off the rest of the line to another stage.
+
+In the next stage, we split along ';'. In compiler semantics, we take the results of the following stage (in the form of a list of predicates) and form a new function that performs OR on each pair; in interpreter semantics, we OR each pair of results (in the form of composite truth values) directly and return the result.
+
+The following stage is similar, but we split along ',' and perform ANDs.
+
+Finally, we parse individual elements, determining whether they are predicate signatures, composite truth values, or some other type. Types (such as lists and strings) other than CTVs and predicates are evaluated as NC. In compiler semantics, CTVs are turned into synthetic predicates that return those CTVs (including elements that have been evaluated as NC); in interpreter semantics, predicates are evaluated in order to turn them into CTVs. It's also at this stage that the order of arguments to each predicate has its mapping defined, in the case of compiler semantics. In interpreter semantics, the evaluation of identifiers is performed during the evaluation of each predicate, using the unificationGetValue function.
+
+Arglist mappings are stored in the form of three lists. The first list contains a number for each arg, representing the position in the arglist for the predicate being translated to for each arg being translated from (usually the predicate being defined is the predicate being translated from, while each predicate it is being defined in terms of is a translated-to predicate). The second list is the inversion -- for each element, it contains the index of the element in the arglist for the predicate being defined. The third list is a set of literals to be substituted into the arglist being translated to.
+]]
+internalsHelp["world"]=[[# Mycroft internals: the world
+
+The world is an object containing all meaningful information about the interpreter's internal state.
+
+The world has the following attributes:
+
+* world.MYCERR -- see [Error Internals](internals-err.md)
+* world.MYCERR_STR -- see [Error Internals](internals-err.md)
+* world.aliases -- a list of aliases between identical predicates in the form of an associative array
+* world.symbols -- an associative array keyed by symbol name, for variables
+
+Furthermore, world contains a set of keys that are predicate IDs. The values for each of these keys have the form:
+
+* world["name/arity"].det -- if true or nil, predicate is determinate
+* world["name/arity"].facts -- an associative array keyed on a serialized set of args, with each value a CTV
+* world["name/arity"].def -- a structure containing:
+* world["name/arity"].def.children -- a list of predicate objects of the form {name=predname, arity=arity}
+* world["name/arity"].def.correspondences -- a list of mappings (see [Parsing Internals](internals-parsing.md)) forming a parallel array with children
+* world["name/arity"].def.literals -- a list of lists of literals forming a parallel array with children. When an element in one of these lists is not nil, the literal is substituted
+* world["name/arity"].def.op -- either "and" or "or"
+]]
+
+helpText["internals"]=[[# Mycroft internals: table of contents
+
+
+* Mycroft Internals: composite truth values: 			help("internals/CTV")
+* Mycroft Internals: error handling: 				help("internals/err")
+* Mycroft Internals: networking and message passing: 		help("internals/net")
+* Mycroft Internals: parsing: 					help("internals/parsing")
+* Mycroft Internals: the world object: 				help("internals/world")
+]]
+
+for k,v in pairs(internalsHelp) do
+	helpText["internals/"..k]=v
+end
 
 -- simple functions
 builtins["true/0"]=function(world) return YES end
