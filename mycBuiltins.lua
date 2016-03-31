@@ -549,7 +549,7 @@ function initBuiltins()
 		end
 		helpText['fgets/2']="fgets(F, X) reads a line from the file handle F (produced by open/3) and puts the line in X. In case of error, MYC_ERR_USERERR is thrown, and NO is returned."
 		builtins['fgets/2']=function(world, f, ret)
-			f=unificationGetItem(f)
+			f=unificationGetItem(world, f)
 			local s,l = pcall(io.read, f, "*l")
 			if(s) then
 				unificationSetItem(world, ret, l)
@@ -561,8 +561,8 @@ function initBuiltins()
 		end
 		helpText['fputs/2']="fputs(F,X) prints the string X to the file handle F. In case of error, MYC_ERR_USERERR is thrown, and NO is returned."
 		builtins['fputs/2']=function(world, f, m)
-			f=unificationGetItem(f)
-			m=unificationGetItem(m)
+			f=unificationGetItem(world, f)
+			m=unificationGetItem(world, m)
 			local s,e = pcall(io.write, m)
 			if(s) then
 				return YES
@@ -575,7 +575,7 @@ function initBuiltins()
 		-- load/save state of the world
 		helpText['saveWorld/1']="saveWorld(FName) saves the state of the world to the file represented by FName."
 		builtins['saveWorld/1']=function(world, fname)
-			fname=unificationGetItem(fname)
+			fname=unificationGetItem(world, fname)
 			local s,f = pcall(io.open, fname, 'w')
 			if(s) then
 				local e
@@ -602,6 +602,14 @@ function initBuiltins()
 			end
 			throw(world, MYC_ERR_USERERR, 'doFile', serialize({fname}), tostring(f))
 			return NO
+		end
+		
+		-- manipulation of help text
+		helpText['setHelp/2']="setHelp(Topic, Text) sets the help text for Topic to Text"
+		builtins['setHelp/2']=function(world, topic, text)
+			topic=unificationGetItem(world, topic)
+			text=unificationGetItem(world, text)
+			helpText[topic]=text
 		end
 	end
 
