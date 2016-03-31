@@ -4,7 +4,7 @@
 LUAVER=5.1
 MODULE_INSTALL_PATH=/usr/share/lua/${LUAVER}/mycroft
 
-install: install_main install_doc install_vim
+install: install_main install_doc install_vim install_module_lookup
 
 test: mycroft.lua
 	./mycroft.lua -t
@@ -39,3 +39,6 @@ install_module: mycBuiltins.lua mycCore.lua mycErr.lua mycNet.lua mycParse.lua m
 install_main: install_module mycroft.lua
 	cp mycroft.lua /usr/bin/mycroft
 
+install_module_lookup:
+	mkdir -p /usr/share/mycroft
+	cp test.myc /usr/share/mycroft/

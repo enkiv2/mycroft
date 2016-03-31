@@ -1,6 +1,7 @@
 builtins={}
 helpText={}
 internalsHelp={}
+importPath={"/usr/share/mycroft"}
 banner=[[
    __  ___                  _____ 
   /  |/  /_ _____________  / _/ /_ Composite
@@ -603,7 +604,58 @@ function initBuiltins()
 			throw(world, MYC_ERR_USERERR, 'doFile', serialize({fname}), tostring(f))
 			return NO
 		end
-		
+
+		-- module handling
+		helpText['import/1']="import(ModuleName) runs the predicates in the file represented by ModuleName in the lookup path."
+		builtins["import/1"]=function(world, modulename)
+			modulename=unificationGetItem(world, modulename)
+			local found=false
+			for _,path in ipairs(importPath) do
+				if(found==false) then
+					local s,f = pcall(io.open, path.."/"..modulename.."/init.myc", 'r')
+					if(s and f~=nil) then
+						local s2=pcall(parseFile, world, f)
+						io.close(f)
+						if(s2) then
+							found=true
+						end
+					end
+				end
+				if(found==false) then
+					local s,f = pcall(io.open, path.."/"..modulename..".myc", 'r')
+					if(s and f~=nil) then
+						local s2=pcall(parseFile, world, f)
+						io.close(f)
+						if(s2) then
+							found=true
+						end
+					end
+				end
+				if(found==false) then
+					local s,f = pcall(io.open, path.."/"..modulename, 'r')
+					if(s and f~=nil) then
+						local s2=pcall(parseFile, world, f)
+						io.close(f)
+						if(s2) then
+							found=true
+						end
+					end
+				end
+			end
+			if(found) then return YES end
+			return NO
+		end
+		helpText['getImportPath/1']="getImportPath(X) sets X to the current import path"
+		builtins['getImportPath/1']=function(world, x)
+			unificationSetItem(world, x, importPath)
+			return YES
+		end
+		helpText['setImportPath/1']="setImportPath(X) sets the current import path to X"
+		builtins['setImportPath/1']=function(world, x)
+			importPath=unificationGetItem(world, x)
+			return YES
+		end
+	
 		-- manipulation of help text
 		helpText['setHelp/2']="setHelp(Topic, Text) sets the help text for Topic to Text"
 		builtins['setHelp/2']=function(world, topic, text)
