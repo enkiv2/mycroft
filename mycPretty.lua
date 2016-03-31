@@ -3,7 +3,7 @@ function debugPrint(msg)
 	if(verbose) then print(pretty("debug: "..serialize(msg))) end
 end
 
-function serialize(args) -- serialize in Mycroft syntax
+function serialize(args, luaMode) -- serialize in Mycroft syntax
 	local ret, sep
 	if(type(args)~="table") then
 		ret=string.gsub(tostring(args), string.char(127), ",")
@@ -21,6 +21,9 @@ function serialize(args) -- serialize in Mycroft syntax
 		return ret
 	end
 	if(args.truth~=nil and args.confidence~=nil) then
+		if(luaMode) then
+			return "{truth="..args.truth..", confidence="..args.confidence.."}"
+		end
 		if(1==args.confidence) then
 			if(1==args.truth) then
 				return "YES"
@@ -39,18 +42,22 @@ function serialize(args) -- serialize in Mycroft syntax
 	elseif(nil~=args.name and nil~=args.arity) then
 		return prettyPredID(args)
 	end
-	ret="("
+	if(luaMode) then
+		ret="{"
+	else
+		ret="("
+	end
 	sep=""
 	local lastK=0
 	for k,v in ipairs(args) do
 		ret=ret..sep
 		if(type(v)=="table") then
-			ret=ret..serialize(v)
+			ret=ret..serialize(v,luaMode)
 		elseif(type(v)=="string") then
-			if(string.find(v, "[^A-Za-z0-9]")==nil) then
+			if(string.find(v, "[^A-Za-z0-9]")==nil and not luaMode) then
 				ret=ret..v
 			else
-				ret=ret.."\""..serialize(v).."\""
+				ret=ret.."\""..serialize(v,luaMode).."\""
 			end
 		else
 			ret=ret..tostring(v)
@@ -62,17 +69,18 @@ function serialize(args) -- serialize in Mycroft syntax
 		if(type(k)~="number") then
 			ret=ret..sep..tostring(k).."="
 			if(type(v)=="table") then
-				ret=ret..serialize(v)
+				ret=ret..serialize(v, luaMode)
 			elseif(type(v)=="string") then
-				ret=ret.."\""..serialize(v).."\""
+				ret=ret.."\""..serialize(v, luaMode).."\""
 			else
 				ret=ret..tostring(v)
 			end
 			sep=","
 		elseif(k>lastK) then
-			ret=ret..sep..tostring(k).."="..serialize(v)
+			ret=ret..sep..tostring(k).."="..serialize(v, luaMode)
 		end
 	end
+	if(luaMode) then return ret.."}" end
 	return ret..")"
 end
 
@@ -102,6 +110,75 @@ function strWorld(world) -- return the code for all predicates as a string
 		end
 	end
 	return "# State of the world\n"..ret
+end
+
+-- XXX: str*Lua does not work yet
+function strWorldLua(world) -- return the code for all predicates as a string
+	local k, v
+	ret=""
+	debugPrint({"world:", world})
+	if(world~=nil) then 
+		for k,v in pairs(world.aliases) do
+			ret=ret..strDefLua(world, k)
+			debugPrint({k, v, ret})
+		end
+		for k,v in pairs(world) do
+			if(k~="MYCERR" and k~="MYCERR_STR" and k~="aliases" and k~="symbols") then
+				ret=ret..strDefLua(world, k)
+			end
+		end
+	end
+	return "# State of the world\n"..ret
+end
+
+function strDefLua(world, k) -- return the definition of the predicate k as a string
+	local ret, argCount, args, hash, val, i, v, sep, pfx
+	ret=""
+	if(world.aliases[k]) then
+		v=world[world.aliases[k]]
+		if (nil==v) then ret=ret.."function "..k.."() return "..world.aliases[k].."() end\n" end
+	else
+		v=world[k]
+	end
+	if(nil==v) then return ret end
+	det="function "
+	pfx=det.." "..string.gsub(tostring(k), "/%d*$", "")
+	if(nil~=v.facts) then
+		for hash,val in pairs(v.facts) do
+			ret=ret..pfx..serialize(hash).." return "..serialize(val).." end\n"
+		end
+	end
+	if(nil~=v.def) then
+		argCount=0
+		args={}
+		if(v.arity<26) then
+			for i=1,v.arity do
+				args[i]=string.char(64+i)
+			end
+		else
+			for i=1,v.arity do
+				args[i]="Arg"..tostring(i)
+			end
+		end
+		if(nil~=v.def.children) then
+			if(nil~=v.def.children[1]) then
+				ret=ret..pfx..serialize(args).." return "
+				if(nil~=v.def.children[2])  then
+					ret=ret.."performPLBoolean("
+					ret=ret..v.def.children[1].name..serialize(translateArgList(args, v.def.correspondences[1]), true)
+					ret=ret..","
+					ret=ret..v.def.children[2].name
+					ret=ret..serialize(translateArgList(args, v.def.correspondences[2]), true)
+					ret=ret..",\""..v.def.op.."\")"
+				else
+					ret=ret..v.def.children[1].name
+					ret=ret..serialize(translateArgList(args, v.def.correspondences[1]), true)
+				end
+				ret=ret.." end \n"
+			end
+		end
+	end
+	return ret
 end
 
 function strDef(world, k) -- return the definition of the predicate k as a string

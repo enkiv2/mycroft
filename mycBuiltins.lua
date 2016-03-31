@@ -240,6 +240,12 @@ helpText["printWorld/0"]=[[printWorld() will print the definitions of all define
 builtins["printPred/1"]=function(world, p) if(nil==world[serialize(p)]) then return NO end print(pretty(strDef(world, serialize(p)))) return YES end
 helpText["printPred/1"]=[[printPred(X) will print the definition of the predicate X to stdout, if X is defined]]
 
+-- XXX does not work yet
+--builtins["printWorldLua/0"]=function(world) print(pretty(strWorldLua(world))) return YES end
+--helpText["printWorldLua/0"]=[[printWorldLua() will print the definitions of all defined predicates as Lua source]]
+--builtins["printPredLua/1"]=function(world, p) if(nil==world[serialize(p)]) then return NO end print(pretty(strDefLua(world, serialize(p)))) return YES end
+--helpText["printPredLua/1"]=[[printPredLua(X) will print the definition of the predicate X to stdout, if X is defined, as Lua source]]
+
 -- error-related functions
 require("mycErr")
 builtins["throw/2"]=function(world, c, m) throw(world, c, "throw/2", serialize({c,m}), m) return YES end
