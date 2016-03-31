@@ -42,3 +42,4 @@ install_main: install_module mycroft.lua
 install_module_lookup:
 	mkdir -p /usr/share/mycroft
 	cp test.myc /usr/share/mycroft/
+	cp mycroftBase.myc /usr/share/mycroft/

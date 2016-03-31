@@ -1,0 +1,6 @@
+#  Helper functions & common utilities that are easier to implement as mycroft code than as lua builtins
+nondet open(FName, X) :- open(FName, r, X).
+?- setHelp("open/2", "open(FName, X) is syntactic sugar for open(Fname, r, X)").
+nondet err(Msg) :- throw(3, Msg).
+?- setHelp("err/1", "err(Msg) is syntactic sugar for throw(3, Msg)").
+

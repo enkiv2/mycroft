@@ -661,7 +661,7 @@ function initBuiltins()
 		builtins['setHelp/2']=function(world, topic, text)
 			topic=unificationGetItem(world, topic)
 			text=unificationGetItem(world, text)
-			helpText[topic]=text
+			helpText[serialize(topic)]=serialize(text)
 		end
 	end
 
@@ -719,7 +719,6 @@ builtins["forward/1"]=function(world, l) l=unificationGetItem(world, l) return p
 builtins["forwardAll/1"]=function(world, l) l=unificationGetItem(world, l) mycnet.forwardFact(world, l) return YES end
 
 defaultConfig=[[
-nondet open(FName, X) :- open(FName, r, X).
-nondet err(Msg) :- throw(3, Msg).
+?- import("mycroftBase").
 nondet welcome() :- banner(), print(""), pprint("Type 'help().' for help, and 'copying().' for copying information."), print("").
 ]]
