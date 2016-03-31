@@ -4,6 +4,9 @@
 LUAVER=5.1
 MODULE_INSTALL_PATH=/usr/share/lua/${LUAVER}/mycroft
 
+build:
+	echo "Nothing to do"
+
 install: install_main install_doc install_vim install_module_lookup
 
 test: mycroft.lua
@@ -22,6 +25,9 @@ install_doc: install_man
 
 install_vim: mycroft.vim
 	mkdir -p /usr/share/vim/vim74/
+	cp mycroft.vim /usr/share/vim/vim74/
+	echo "au BufNewFile,BufRead *.myc set syntax=mycroft" >> ~/.vimrc
+	touch install_vim
 
 install_module: mycBuiltins.lua mycCore.lua mycErr.lua mycNet.lua mycParse.lua mycPretty.lua mycTests.lua mycType.lua hash.lua init.lua
 	mkdir -p ${MODULE_INSTALL_PATH}
