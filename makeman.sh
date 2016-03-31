@@ -1,4 +1,3 @@
-#!/usr/bin/sh
 
 echo ".TH mycroft 1 `date +%Y-%m-%d`"
 ./mycroft.lua -h | 
