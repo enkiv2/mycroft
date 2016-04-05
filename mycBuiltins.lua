@@ -1,3 +1,4 @@
+math=require("math")
 builtins={}
 helpText={}
 internalsHelp={}
@@ -350,6 +351,20 @@ builtins["div/3"]=function(world, a, b, r)
 	unificationSetItem(world, r, a/b)
 	return builtins["equal/2"](world, r, a/b)
 end
+builtins["exp/2"]=function(world, a, b)
+	a=unificationGetItem(world, a)
+	a=tonumber(a)
+	if(nil==a) then return NO end
+	unificationSetItem(world, b, math.exp(a))
+	return builtins["equal/2"](world, b, math.exp(a))
+end
+builtins["sigmoid/2"]=function(world, a, b)
+	a=unificationGetItem(world, a)
+	a=tonumber(a)
+	if(nil==a) then return NO end
+	unificationSetItem(world, b, 1/(1+math.exp(-a)))
+	return builtins["equal/2"](world, b, 1/(1+math.exp(-a)))
+end
 builtins["concat/3"]=function(world, a, b, r) 
 	a=unificationGetItem(world, a)
 	b=unificationGetItem(world, b)
@@ -383,6 +398,8 @@ helpText["add/3"]=[[add(A,B,X), sub(A,B,X), mul(A,B,X),div(A,B,X)\tSet X=A+B, A-
 helpText["sub/3"]=helpText["add/3"]
 helpText["mul/3"]=helpText["add/3"]
 helpText["div/3"]=helpText["add/3"]
+helpText["exp/2"]="exp(A,B) sets B to e^A"
+helpText["sigmoid/2"]="sigmoid(A,B) sets B to the result of the sigmoid function of A"
 helpText["concat/3"]="concat(A,B,X)\tSet X to the string concatenation of A and B"
 helpText["append/3"]="append(A,B,X)\tSet X to a list consisting of the item B appended to the end of the list A. If A is not a list, set X to a list consisting of items A and B."
 
