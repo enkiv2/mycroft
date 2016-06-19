@@ -30,9 +30,9 @@ A truth value (or composite truth value, or CTV) is of the form
     <Truth, Confidence>
 
 where both Truth and Confidence are floating point values between 0 and 1. 
-<X| is syntactic sugar for <X,1.0>; |X> is syntactic sugar for <1.0,X>; 
+<X| is syntactic sugar for <X, 1.0>; |X> is syntactic sugar for <1.0, X>; 
 YES is syntactic sugar for <1.0, 1.0>; NO is syntactic sugar for <0.0, 1.0>; 
-and, NC is syntactic sugar for <X,0.0> regardless of the value of X.
+and, NC is syntactic sugar for <X, 0.0> regardless of the value of X.
 
 A query is of the form:
 
