@@ -114,7 +114,6 @@ function createDef(world, pred, preds, convs, op, det, literals) -- define a pre
 		if(type(preds)=="table" and nil==preds.name) then
 			newDet=true
 			for i,j in ipairs(preds) do
-				print(serialize(j))
 				if world[serialize(j)]==nil then
 					if not builtinDet[serialize(j)] then newDet=false end
 				else
