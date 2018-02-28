@@ -121,7 +121,7 @@ function main(argv)
 			end
 		end
 	end
-	package.path=package.path..";/usr/share/lua/5.1/?/init.lua;/usr/share/lua/5.1/?.lua"
+	package.path=package.path..";/usr/share/lua/5.1/?/init.lua;/usr/share/lua/5.1/?.lua;/usr/share/lua/5.1/mycroft/?.lua"
 	local s,e=pcall(require,"mycCore")
 	if(not s) then
 		print(e)
