@@ -79,13 +79,22 @@ function parseBodyComponents(world, body, defSem, argList, offset)
 		end)
 	leftOff=1
 	body=string.gsub(body, "(%b<>)", function(c) 
-			local x=parseItem(world, c, defSem, argList) 
-			leftOff=string.find(body, c)
-			local pos=leftOff+offset
-			while(items[pos]) do
-				pos=pos+1
-			end
-			table.insert(items,pos,x)
+			-- XXX figure out how to make %b non-greedy
+			-- Possibly with third party regex lib?
+--			if(string.find(string.sub(c, 2, -2), ">")!=nil) then
+--				local x=string.gsub(c, "([^>]+>),", function (d)
+--					local y=parseItem(world, d, defSem, argList)
+--
+--				end)
+--			else
+				local x=parseItem(world, c, defSem, argList) 
+				leftOff=string.find(body, c)
+				local pos=leftOff+offset
+				while(items[pos]) do
+					pos=pos+1
+				end
+				table.insert(items,pos,x)
+--			end
 			return string.rep(" ", #c)
 		end)
 	leftOff=1
@@ -235,6 +244,7 @@ function parseAndComponent(world, andComponent, andTBL, defSem, arglist, offset)
 		end
 		table.insert(andTBL, offset+i, v)
 	end
+	debugPrint(andTBL)
 	local ret=string.rep(" ", lastChunkSize[1])
 	return ret
 end

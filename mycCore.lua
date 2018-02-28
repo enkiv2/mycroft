@@ -17,6 +17,7 @@ end
 
 function executePredicatePA(world, p, args) -- execute p with the given arglist
 	local ret, det, r, hash, ppid
+	if(p.truth~=nil and p.confidence~=nil) then return p end
 	hash=serialize(args)
 	ppid=prettyPredID(p)
 	debugPrint("Executing predicate: "..ppid..hash)
