@@ -1,5 +1,6 @@
 math=require("math")
 builtins={}
+builtinDet={}
 helpText={}
 internalsHelp={}
 importPath={"/usr/share/mycroft"}
@@ -218,6 +219,9 @@ builtins["nc/0"]=function(world) return NC end
 helpText["true/0"]=[[true/0, false/0, nc/0 - return YES, NO, or NC, respectively]]
 helpText["false/0"]=helpText["true/0"]
 helpText["nc/0"]=helpText["true/0"]
+builtinDet["true/0"]=true
+builtinDet["false/0"]=true
+builtinDet["nc/0"]=true
 builtins["set/2"]=function(world, x, y) unificationSetItem(world, x, unificationGetItem(world, y)) return builtins["equal/2"](world, x, y) end
 helpText["set/2"]="set(X, Y) forces unification of X with Y, if possible."
 builtins["eval/1"]=function(world, x) x=unificationGetItem(world, x) return parseLine(world, x) end
@@ -273,11 +277,16 @@ builtins["equal/2"]=function(world, a, b)
 	if(serialize(a)==serialize(b)) then return YES end
 	return NO
 end
+builtinDet["equal/2"]=true
 helpText["equal/2"]="equal(X, Y)\treturn YES if X equals Y, otherwise return NO\ngt/2, lt/2, gte/2, and lte/2 work the same way as equal/2, except that values that are neither strings nor numbers are not valid and will return NC"
 helpText["gt/2"]=helpText["equal/2"]
 helpText["lt/2"]=helpText["equal/2"]
 helpText["gte/2"]=helpText["equal/2"]
 helpText["lte/2"]=helpText["equal/2"]
+builtinDet["gt/2"]=true
+builtinDet["lt/2"]=true
+builtinDet["gte/2"]=true
+builtinDet["lte/2"]=true
 builtins["gt/2"]=function(world, a, b) 
 	a=unificationGetItem(world, a)
 	b=unificationGetItem(world, b)
@@ -313,6 +322,7 @@ builtins["not/1"]=function(world, a)
 	return canonicalizeCTV(ret)
 end
 helpText["not/1"]="Invert the truth component of a truth value"
+builtinDet["not/2"]=true
 
 -- composition functions
 builtins["add/3"]=function(world, a, b, r) 
@@ -394,6 +404,14 @@ builtins["append/3"]=function(world, a, b, r)
 	unificationSetItem(world, r, ret)
 	return builtins["equal/2"](world, r, ret)
 end
+builtinDet["add/3"]=true
+builtinDet["sub/3"]=true
+builtinDet["mul/3"]=true
+builtinDet["div/3"]=true
+builtinDet["exp/3"]=true
+builtinDet["sigmoid/3"]=true
+builtinDet["concat/3"]=true
+builtinDet["append/3"]=true
 helpText["add/3"]=[[add(A,B,X), sub(A,B,X), mul(A,B,X),div(A,B,X)\tSet X=A+B, A-B, A*B, or A/B, respectively]]
 helpText["sub/3"]=helpText["add/3"]
 helpText["mul/3"]=helpText["add/3"]

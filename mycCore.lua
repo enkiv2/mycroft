@@ -113,9 +113,13 @@ function createDef(world, pred, preds, convs, op, det, literals) -- define a pre
 	if(det==nil) then
 		if(type(preds)=="table" and nil==preds.name) then
 			newDet=true
-			-- XXX determine det based on det status of children
 			for i,j in ipairs(preds) do
-				if not world[serialize(inflatePredID(j))].det then newDet=false end
+				print(serialize(j))
+				if world[serialize(j)]==nil then
+					if not builtinDet[serialize(j)] then newDet=false end
+				else
+					if not world[serialize(j)].det then newDet=false end
+				end
 			end
 			det=newDet
 		else
@@ -213,6 +217,7 @@ function createDef(world, pred, preds, convs, op, det, literals) -- define a pre
 				sconv[2][i]=i
 			end
 			local spred=createAnonDef(world, pred.arity, preds, convs, op, nil, literals_head)
+			local spred=createAnonDef(world, pred.arity, preds, convs, op, det, literals_head)
 			return createDef(world, pred, {spred, preds_head}, {sconv, convs_head}, op, det, literals)
 		end
 	else
