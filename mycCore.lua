@@ -216,7 +216,6 @@ function createDef(world, pred, preds, convs, op, det, literals) -- define a pre
 				sconv[2][i]=i
 			end
 			local spred=createAnonDef(world, pred.arity, preds, convs, op, nil, literals_head)
-			local spred=createAnonDef(world, pred.arity, preds, convs, op, det, literals_head)
 			return createDef(world, pred, {spred, preds_head}, {sconv, convs_head}, op, det, literals)
 		end
 	else
