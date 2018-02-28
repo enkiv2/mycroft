@@ -107,6 +107,21 @@ end
 function createDef(world, pred, preds, convs, op, det, literals) -- define a predicate as a combination of given preds
 	debugPrint({"createDef", "world", pred, preds, convs, op, det})
 	pred=inflatePredID(pred)
+	if(type(preds)=="string") then
+		preds=inflatePredID(preds)
+	end
+	if(det==nil) then
+		if(type(preds)=="table" and nil==preds.name) then
+			newDet=true
+			-- XXX determine det based on det status of children
+			for i,j in ipairs(preds) do
+				if not world[serialize(inflatePredID(j))].det then newDet=false end
+			end
+			det=newDet
+		else
+			det=world[serialize(preds)].det
+		end
+	end
 	local p
 	if(nil==world) then return throw(world, MYC_ERR_UNDEFWORLD, pred, {}, " :- "..serialize({op, preds, conv})) end
 	if (nil==world.aliases) then world.aliases={} end
@@ -134,9 +149,6 @@ function createDef(world, pred, preds, convs, op, det, literals) -- define a pre
 	end
 	world[p].def.op=op
 	world[p].arity=pred.arity
-	if(type(preds)=="string") then
-		preds=inflatePredID(preds)
-	end
 	if(type(preds)=="table" and nil==preds.name) then
 		if(#preds==1) then 
 			local i,j,same
@@ -200,7 +212,7 @@ function createDef(world, pred, preds, convs, op, det, literals) -- define a pre
 				sconv[1][i]=i
 				sconv[2][i]=i
 			end
-			local spred=createAnonDef(world, pred.arity, preds, convs, op, det, literals_head)
+			local spred=createAnonDef(world, pred.arity, preds, convs, op, nil, literals_head)
 			return createDef(world, pred, {spred, preds_head}, {sconv, convs_head}, op, det, literals)
 		end
 	else
@@ -217,8 +229,8 @@ function anonPredID(arity) -- produce a synthetic predID for an anonymous predic
 	anonPredCount=anonPredCount+1
 	return spred
 end
-function createAnonDef(world, arity, preds, convs, op, det) -- define an anonymous predicate
-	return createDef(world, anonPredID(arity), preds, convs, op, det)
+function createAnonDef(world, arity, preds, convs, op, det, literals) -- define an anonymous predicate
+	return createDef(world, anonPredID(arity), preds, convs, op, det, literals)
 end
 function createAnonFact(world, arity, hash, truth) -- create an anonymous fact
 	return createFact(world, anonPredID(arity), hash, truth)
