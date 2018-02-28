@@ -96,6 +96,7 @@ function unificationGetItem(world, itemName)
 		debugPrint(serialize(itemName).."=\""..serialize(itemName).."\"")
 		return itemName 
 	end
+	if(itemName=="_") then return itemName end
 	if(#itemName>0) then
 		if(string.find(itemName, '^%u')~=nil) then
 			if(world.symbols[itemName]==nil) then 
@@ -115,6 +116,7 @@ end
 function unificationSetItem(world, itemName, value)
 	if(nil==world.symbols) then world.symbols={} end
 	if(type(itemName) ~= "string") then return itemName end
+	if(itemName=="_") then return itemName end
 	if(#itemName>0) then
 		if(string.find(itemName, '^%u')~=nil) then
 			if(world.symbols[itemName]==nil) then

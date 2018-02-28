@@ -271,6 +271,8 @@ MYC_ERR_DETNONDET	]]..tostring(MYC_ERR_DETNONDET)..[[	determinacy conflict: pred
 
 -- comparison functions
 builtins["equal/2"]=function(world, a, b)
+	if(a=="_") then return YES end
+	if(b=="_") then return YES end
 	a=unificationGetItem(world, a)
 	b=unificationGetItem(world, b)
 	if(a==b) then return YES end 
@@ -288,6 +290,8 @@ builtinDet["lt/2"]=true
 builtinDet["gte/2"]=true
 builtinDet["lte/2"]=true
 builtins["gt/2"]=function(world, a, b) 
+	if(a=="_") then return YES end
+	if(b=="_") then return YES end
 	a=unificationGetItem(world, a)
 	b=unificationGetItem(world, b)
 	if(type(a)=="table" or type(b)=="table") then return NC end
@@ -295,6 +299,8 @@ builtins["gt/2"]=function(world, a, b)
 	return NO
 end
 builtins["lt/2"]=function(world, a, b) 
+	if(a=="_") then return YES end
+	if(b=="_") then return YES end
 	a=unificationGetItem(world, a)
 	b=unificationGetItem(world, b)
 	if(type(a)=="table" or type(b)=="table") then return NC end
@@ -302,6 +308,8 @@ builtins["lt/2"]=function(world, a, b)
 	return NO
 end
 builtins["gte/2"]=function(world, a, b) 
+	if(a=="_") then return YES end
+	if(b=="_") then return YES end
 	a=unificationGetItem(world, a)
 	b=unificationGetItem(world, b)
 	if(type(a)=="table" or type(b)=="table") then return NC end
@@ -309,6 +317,8 @@ builtins["gte/2"]=function(world, a, b)
 	return NO
 end
 builtins["lte/2"]=function(world, a, b) 
+	if(a=="_") then return YES end
+	if(b=="_") then return YES end
 	a=unificationGetItem(world, a)
 	b=unificationGetItem(world, b)
 	if(type(a)=="table" or type(b)=="table") then return NC end
