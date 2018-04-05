@@ -27,7 +27,7 @@ The normal (prolog-inspired) Mycroft syntax is difficult to parse because of cer
 `term := <num>|<CTV>|<var>|<atom>|<predName>|<operator>`
 
 
-`predDef := ":- "<predName>" "(<term>" ")+"."`
+`predDef := ("det "|"nondet ")?":- "<predName>" "(<term>" ")+"."`
 
 `predQuery := "?- "(<term>" ")*"."`
 
@@ -41,5 +41,4 @@ Outside of the context of `predDef`, `predName`s are always interpreted as being
 
 The `,` and `;` operators apply to all previous terms, indicating that, after the stack has been consumed by preds, the remaining values should be combined into one value using 'and' or 'or' operations respectively.
 
-The `predDef` operation is similar to ':' in FORTH -- in other words, the first arg after `:-` is considered to be the pred we are defining, and the remainder of the items should be interpreted as though they were in a predQuery, with `arity` items pushed onto the stack. If not otherwise specified, if multiple items remain on the stack after being consumed, we should apply the 'and' operation to them.
-
+The `predDef` operation is similar to ':' in FORTH -- in other words, the first arg after `:-` is considered to be the pred we are defining, and the remainder of the items should be interpreted as though they were in a predQuery, with `arity` items pushed onto the stack. If not otherwise specified, if multiple items remain on the stack after being consumed, we should apply the 'and' operation to them. `det` and `nondet` are optional -- we will default to `det` if all preds called are det, otherwise nondet.
